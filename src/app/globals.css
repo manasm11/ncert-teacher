@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  :root {
+    --background: 142 62% 95%; /* Light green forest tint */
+    --foreground: 142 50% 10%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 142 50% 10%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 142 50% 10%;
+    
+    --primary: 142 71% 45%; /* Vibrant Jungle Green */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 200 80% 60%; /* Playful Sky Blue (for contrast) */
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 142 20% 90%;
+    --muted-foreground: 142 20% 40%;
+    
+    --accent: 45 93% 55%; /* Warm sun yellow */
+    --accent-foreground: 142 50% 10%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 142 20% 80%;
+    --input: 142 20% 80%;
+    --ring: 142 71% 45%;
+
+    --radius: 1rem;
+  }
+
+  .dark {
+    --background: 142 50% 5%; /* Deep forest night */
+    --foreground: 142 20% 90%;
+    
+    --card: 142 50% 10%;
+    --card-foreground: 142 20% 90%;
+    
+    --popover: 142 50% 10%;
+    --popover-foreground: 142 20% 90%;
+    
+    --primary: 142 71% 45%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 200 80% 50%;
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 142 20% 15%;
+    --muted-foreground: 142 20% 60%;
+    
+    --accent: 45 93% 50%;
+    --accent-foreground: 142 50% 10%;
+    
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 142 20% 20%;
+    --input: 142 20% 20%;
+    --ring: 142 71% 45%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
+    background-image: radial-gradient(circle at 50% -20%, hsl(var(--secondary) / 0.15), transparent 70%);
+  }
+}
+
+/* Custom Utilities for Playful UI */
+@layer utilities {
+  .shadow-playful {
+    box-shadow: 0 8px 0 hsl(var(--primary) / 0.8), 0 15px 20px rgba(0,0,0,0.1);
+  }
+  .shadow-playful:active {
+    box-shadow: 0 0px 0 hsl(var(--primary) / 0.8), 0 5px 10px rgba(0,0,0,0.1);
+    transform: translateY(8px);
+  }
+}
