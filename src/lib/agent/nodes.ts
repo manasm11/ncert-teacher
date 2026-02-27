@@ -1,6 +1,6 @@
 import { AgentState } from "./state";
 import { qwenRouter, deepseekReasoner } from "./llm";
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { SystemMessage } from "@langchain/core/messages";
 import { z } from "zod";
 
 // --- Tool definition for the router ---
@@ -48,7 +48,7 @@ Respond ONLY with the structured output calling the routing schema.`);
     }
 }
 
-export async function textbookRetrievalNode(state: typeof AgentState.State) {
+export async function textbookRetrievalNode(_state: typeof AgentState.State) {
     // Placeholder for true Supabase pgvector retrieval
     // For the MVP, we just mock retrieving context.
 
@@ -83,10 +83,10 @@ export async function webSearchNode(state: typeof AgentState.State) {
         if (!response.ok) throw new Error("SearXNG request failed");
 
         const data = await response.json();
-        const topResults = data.results?.slice(0, 3).map((r: any) => `- ${r.title}: ${r.content}`).join("\n");
+        const topResults = data.results?.slice(0, 3).map((r: { title: string; content: string }) => `- ${r.title}: ${r.content}`).join("\n");
 
         return { webSearchContext: topResults ? `Top Web Search Results:\n${topResults}` : "No results found on the web." };
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("Web search failed:", err);
         return { webSearchContext: "Web search failed. Proceed with general knowledge." };
     }

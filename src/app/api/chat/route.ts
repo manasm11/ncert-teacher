@@ -39,8 +39,9 @@ export async function POST(req: NextRequest) {
             }
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("LangGraph API Route Error:", error);
-        return NextResponse.json({ error: error.message || "Something went wrong with the Gyanu Tutor API" }, { status: 500 });
+        const message = error instanceof Error ? error.message : "Something went wrong with the Gyanu Tutor API";
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
