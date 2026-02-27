@@ -1,48 +1,40 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Send, Sparkles, BookOpen } from "lucide-react";
+import { ArrowLeft, Send, Sparkles, BookOpen, X } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useChat } from "@/lib/chat/useChat";
 
 export default function LearnInteractivePage({ params }: { params: { id: string } }) {
-    // Placeholder state for the chat
-    const [messages, setMessages] = useState([
-        { role: "assistant", text: "Hello there! I'm Gyanu 🐘. Ready to dive into today's chapter? Ask me anything when you get stuck!" }
-    ]);
+    const { messages, isLoading, phase, phaseMessage, error, sendMessage, cancelRequest } = useChat();
     const [input, setInput] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim() || isLoading) return;
 
-        // Add user message
-        const userMessage = { role: "user", text: input };
-        const newMessages = [...messages, userMessage];
-        setMessages(newMessages);
+        await sendMessage(input, { classGrade: "6", subject: "Science", chapter: params.id });
         setInput("");
-        setIsLoading(true);
+    };
 
-        try {
-            const response = await fetch("/api/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    messages: newMessages,
-                    userContext: { classGrade: "6", subject: "Science", chapter: params.id }
-                })
-            });
+    // Get phase message for display
+    const getPhaseMessage = () => {
+        if (error) return "Error occurred";
+        if (isLoading) return phaseMessage || "Processing...";
+        return "";
+    };
 
-            if (!response.ok) throw new Error("Network response was not ok");
-
-            const data = await response.json();
-            setMessages(prev => [...prev, { role: "assistant", text: data.text }]);
-        } catch (error) {
-            console.error(error);
-            setMessages(prev => [...prev, { role: "assistant", text: "Oops! My connection to the forest map seems unstable right now! 🐘🌿" }]);
-        } finally {
-            setIsLoading(false);
+    // Get phase color for styling
+    const getPhaseColor = () => {
+        switch (phase) {
+            case "routing": return "bg-blue-100 text-blue-800";
+            case "retrieval": return "bg-green-100 text-green-800";
+            case "web_search": return "bg-purple-100 text-purple-800";
+            case "reasoning": return "bg-orange-100 text-orange-800";
+            case "synthesis": return "bg-teal-100 text-teal-800";
+            case "error": return "bg-red-100 text-red-800";
+            default: return "bg-gray-100 text-gray-800";
         }
     };
 
@@ -140,6 +132,21 @@ export default function LearnInteractivePage({ params }: { params: { id: string 
                             </div>
                         </motion.div>
                     ))}
+
+                    {/* Phase indicator */}
+                    {isLoading && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="flex justify-start"
+                        >
+                            <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium ${getPhaseColor()}`}>
+                                {getPhaseMessage()}
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* Loading dots */}
                     {isLoading && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
                             <div className="bg-white border border-border shadow-sm rounded-2xl px-5 py-3 rounded-tl-sm">
@@ -149,6 +156,23 @@ export default function LearnInteractivePage({ params }: { params: { id: string 
                                     <div className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
                                 </div>
                             </div>
+                        </motion.div>
+                    )}
+
+                    {/* Cancel button when loading */}
+                    {isLoading && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="flex justify-center"
+                        >
+                            <button
+                                onClick={cancelRequest}
+                                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                                <X className="w-3 h-3" />
+                                Cancel
+                            </button>
                         </motion.div>
                     )}
                 </div>
@@ -162,6 +186,7 @@ export default function LearnInteractivePage({ params }: { params: { id: string 
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Ask Gyanu a question..."
                             className="w-full pl-5 pr-14 py-4 rounded-full bg-muted/30 border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all text-sm shadow-inner text-foreground placeholder-muted-foreground"
+                            disabled={isLoading}
                         />
                         <button
                             type="submit"
