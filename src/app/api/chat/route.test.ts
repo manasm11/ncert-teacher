@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { POST } from "./route";
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock NextRequest
 class MockNextRequest extends Request implements NextRequest {
@@ -10,9 +11,9 @@ class MockNextRequest extends Request implements NextRequest {
   // Add missing properties
   get cookies() {
     return {
-      get: jest.fn(),
-      set: jest.fn(),
-      delete: jest.fn(),
+      get: vi.fn(),
+      set: vi.fn(),
+      delete: vi.fn(),
     };
   }
 
@@ -22,9 +23,9 @@ class MockNextRequest extends Request implements NextRequest {
 }
 
 // Mock the LangChain dependencies
-jest.mock("@/lib/agent/graph", () => ({
-  createGraph: jest.fn().mockReturnValue({
-    streamEvents: jest.fn().mockImplementation(async function* () {
+vi.mock("@/lib/agent/graph", () => ({
+  createGraph: vi.fn().mockReturnValue({
+    streamEvents: vi.fn().mockImplementation(async function* () {
       // Yield some mock events
       yield { event: "on_chain_start", name: "router" };
       yield { event: "on_chain_start", name: "textbook_retrieval" };
@@ -37,6 +38,10 @@ jest.mock("@/lib/agent/graph", () => ({
 }));
 
 describe("Chat API Route", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("should stream SSE events", async () => {
     const mockRequest = new MockNextRequest("http://localhost:3000/api/chat", {
       method: "POST",

@@ -1,12 +1,13 @@
 import { renderHook, act } from '@testing-library/react';
 import { useChat } from './useChat';
+import { vi, describe, beforeEach, it, expect } from 'vitest';
 
 // Mock the fetch API
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
 describe('useChat', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should initialize with default message', () => {
@@ -34,7 +35,7 @@ describe('useChat', () => {
       }
     });
 
-    (fetch as jest.Mock).mockResolvedValueOnce({
+    (fetch as any).mockResolvedValueOnce({
       ok: true,
       body: mockResponse,
     });
@@ -55,7 +56,7 @@ describe('useChat', () => {
   });
 
   it('should handle errors gracefully', async () => {
-    (fetch as jest.Mock).mockRejectedValueOnce(new Error("Network error"));
+    (fetch as any).mockRejectedValueOnce(new Error("Network error"));
 
     const { result } = renderHook(() => useChat());
 

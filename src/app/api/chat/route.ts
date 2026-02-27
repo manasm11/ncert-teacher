@@ -129,10 +129,11 @@ export async function POST(req: NextRequest) {
             },
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("LangGraph API Route Error:", error);
+        const message = error instanceof Error ? error.message : "Something went wrong with the Gyanu Tutor API";
         return new Response(
-            formatSSE("error", { message: error.message || "Something went wrong with the Gyanu Tutor API" }),
+            formatSSE("error", { message }),
             {
                 status: 500,
                 headers: {

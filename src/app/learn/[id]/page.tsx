@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState } from "react";
 import { ArrowLeft, Send, Sparkles, BookOpen, X } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useChat } from "@/lib/chat/useChat";
 
-export default function LearnInteractivePage({ params }: { params: { id: string } }) {
+export default function LearnInteractivePage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
     const { messages, isLoading, phase, phaseMessage, error, sendMessage, cancelRequest } = useChat();
     const [input, setInput] = useState("");
 
@@ -14,7 +15,7 @@ export default function LearnInteractivePage({ params }: { params: { id: string 
         e.preventDefault();
         if (!input.trim() || isLoading) return;
 
-        await sendMessage(input, { classGrade: "6", subject: "Science", chapter: params.id });
+        await sendMessage(input, { classGrade: "6", subject: "Science", chapter: id });
         setInput("");
     };
 
@@ -58,7 +59,7 @@ export default function LearnInteractivePage({ params }: { params: { id: string 
 
                     {/* Fake Textbook Content Header */}
                     <div className="mb-10">
-                        <div className="text-sm font-bold tracking-widest text-primary uppercase mb-2">Chapter {params.id}</div>
+                        <div className="text-sm font-bold tracking-widest text-primary uppercase mb-2">Chapter {id}</div>
                         <h1 className="text-4xl md:text-5xl font-bold font-outfit text-foreground tracking-tight">Components of Food</h1>
                     </div>
 
