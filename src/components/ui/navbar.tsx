@@ -93,9 +93,12 @@ export async function Navbar() {
                                 {role}
                             </span>
                         )}
-                        <button className="text-muted-foreground hover:text-foreground transition-colors">
+                        <Link
+                            href="/profile"
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                        >
                             <Settings className="w-5 h-5" />
-                        </button>
+                        </Link>
                         <form action={signOut}>
                             <button
                                 type="submit"
