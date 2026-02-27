@@ -1,11 +1,6 @@
 import type { Metadata } from 'next';
-import { Inter, Outfit } from 'next/font/google';
 import './globals.css';
 import { Navbar } from '@/components/ui/navbar';
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-// Outfit gives a very friendly, slightly rounded, modern look perfect for kids/learning
-const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
 
 export const metadata: Metadata = {
   title: 'Gyanu AI | Your Friendly Forest Tutor',
@@ -19,7 +14,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${outfit.variable} font-sans antialiased selection:bg-primary selection:text-white`}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Outfit:wght@100..900&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="font-sans antialiased selection:bg-primary selection:text-white">
         <Navbar />
         <div className="pt-16">
           {children}

@@ -120,6 +120,7 @@ export async function POST(req: NextRequest) {
             }
         });
 
+<<<<<<< HEAD
         return new Response(stream, {
             headers: {
                 "Content-Type": "text/event-stream",
