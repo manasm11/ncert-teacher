@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { login, signup, signInWithOAuth } from "./actions";
 import { BookOpen } from "lucide-react";
@@ -24,7 +24,7 @@ function GitHubIcon({ className }: { className?: string }) {
     );
 }
 
-export default function LoginPage() {
+function LoginPageContent() {
     const [isLogin, setIsLogin] = useState(true);
     const searchParams = useSearchParams();
     const error = searchParams.get("error");
@@ -135,5 +135,13 @@ export default function LoginPage() {
 
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense>
+            <LoginPageContent />
+        </Suspense>
     );
 }
