@@ -1,18 +1,59 @@
 "use client";
 
-import { use, useState } from "react";
-import { ArrowLeft, Send, Sparkles, BookOpen } from "lucide-react";
+import { use, useState, useEffect } from "react";
+import { ArrowLeft, Send, Sparkles, BookOpen, Plus, History } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { getUserConversations, getConversationWithMessages } from "@/lib/chat/api";
+import type { Conversation, Message } from "@/types/chat";
 
 export default function LearnInteractivePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
-    // Placeholder state for the chat
-    const [messages, setMessages] = useState([
+    const [messages, setMessages] = useState<Array<{ role: "user" | "assistant" | "system"; text: string; id?: string }>>([
         { role: "assistant", text: "Hello there! I'm Gyanu 🐘. Ready to dive into today's chapter? Ask me anything when you get stuck!" }
     ]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [conversationId, setConversationId] = useState<string | null>(null);
+    const [conversations, setConversations] = useState<Conversation[]>([]);
+    const [showHistory, setShowHistory] = useState(false);
+
+    // Load user's conversations on mount
+    useEffect(() => {
+        loadUserConversations();
+    }, []);
+
+    const loadUserConversations = async () => {
+        try {
+            const userConversations = await getUserConversations();
+            setConversations(userConversations);
+        } catch (error) {
+            console.error("Failed to load conversations:", error);
+        }
+    };
+
+    const loadConversation = async (convId: string) => {
+        try {
+            const { conversation, messages: convMessages } = await getConversationWithMessages(convId);
+            setConversationId(convId);
+            setMessages(convMessages.map(msg => ({
+                role: msg.role as "user" | "assistant" | "system",
+                text: msg.content,
+                id: msg.id
+            })));
+            setShowHistory(false);
+        } catch (error) {
+            console.error("Failed to load conversation:", error);
+        }
+    };
+
+    const startNewConversation = () => {
+        setConversationId(null);
+        setMessages([
+            { role: "assistant", text: "Hello there! I'm Gyanu 🐘. Ready to dive into today's chapter? Ask me anything when you get stuck!" }
+        ]);
+        setShowHistory(false);
+    };
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -31,14 +72,24 @@ export default function LearnInteractivePage({ params }: { params: Promise<{ id:
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     messages: newMessages,
-                    userContext: { classGrade: "6", subject: "Science", chapter: id }
+                    userContext: { classGrade: "6", subject: "Science", chapter: id },
+                    conversationId: conversationId
                 })
             });
 
             if (!response.ok) throw new Error("Network response was not ok");
 
             const data = await response.json();
+
+            // Update conversation ID if it's a new conversation
+            if (data.conversationId && !conversationId) {
+                setConversationId(data.conversationId);
+            }
+
             setMessages(prev => [...prev, { role: "assistant", text: data.text }]);
+
+            // Reload conversations to update the list
+            loadUserConversations();
         } catch (error) {
             console.error(error);
             setMessages(prev => [...prev, { role: "assistant", text: "Oops! My connection to the forest map seems unstable right now! 🐘🌿" }]);
@@ -108,11 +159,51 @@ export default function LearnInteractivePage({ params }: { params: Promise<{ id:
             </div>
 
             {/* RIGHT PANEL: Gyanu Interactive Chat */}
-            <div className="w-full md:w-[400px] lg:w-[450px] h-[50vh] md:h-full bg-white flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.03)] z-20 shrink-0 border-t md:border-t-0 border-border">
+            <div className="w-full md:w-[400px] lg:w-[450px] h-[50vh] md:h-full bg-white flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.03)] z-20 shrink-0 border-t md:border-t-0 border-border relative">
+
+            {/* Conversation History Sidebar */}
+            {showHistory && (
+                <div className="absolute inset-0 bg-white z-30 border-l border-border flex flex-col">
+                    <div className="p-4 border-b border-border flex items-center justify-between">
+                        <h3 className="font-bold font-outfit">Chat History</h3>
+                        <button
+                            onClick={() => setShowHistory(false)}
+                            className="text-muted-foreground hover:text-foreground"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto">
+                        <div className="p-2">
+                            <button
+                                onClick={startNewConversation}
+                                className="w-full flex items-center gap-2 p-3 rounded-lg hover:bg-muted text-left"
+                            >
+                                <Plus className="w-4 h-4" />
+                                New Chat
+                            </button>
+                        </div>
+                        <div className="divide-y divide-border">
+                            {conversations.map((conv) => (
+                                <button
+                                    key={conv.id}
+                                    onClick={() => loadConversation(conv.id)}
+                                    className="w-full p-4 text-left hover:bg-muted"
+                                >
+                                    <div className="font-medium truncate">{conv.title || `Chat ${new Date(conv.created_at).toLocaleDateString()}`}</div>
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                        {new Date(conv.updated_at).toLocaleString()}
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
 
                 {/* Chat Header */}
                 <div className="h-16 border-b flex items-center px-6 bg-white shrink-0 shadow-sm relative z-10">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-1">
                         <div className="relative">
                             <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-xl shadow-inner">🐘</div>
                             <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
@@ -122,6 +213,12 @@ export default function LearnInteractivePage({ params }: { params: Promise<{ id:
                             <span className="text-xs text-primary font-medium">Online & Ready to Help</span>
                         </div>
                     </div>
+                    <button
+                        onClick={() => setShowHistory(!showHistory)}
+                        className="p-2 rounded-lg hover:bg-muted text-muted-foreground"
+                    >
+                        <History className="w-4 h-4" />
+                    </button>
                 </div>
 
                 {/* Messages Area */}
