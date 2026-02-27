@@ -1,5 +1,5 @@
 import { AgentState } from "./state";
-import { qwenRouter, deepseekReasoner } from "./llm";
+import { getQwenRouter, getDeepseekReasoner } from "./llm";
 import { SystemMessage } from "@langchain/core/messages";
 import { z } from "zod";
 import { serverEnv } from "@/lib/env";
@@ -23,7 +23,7 @@ Analyze the user's latest message and route it appropriately based on these rule
 
 Respond ONLY with the structured output calling the routing schema.`);
 
-    const modelWithTools = qwenRouter.withStructuredOutput(routingSchema);
+    const modelWithTools = getQwenRouter().withStructuredOutput(routingSchema);
 
     const result = await modelWithTools.invoke([routerPrompt, ...messages]);
 
@@ -99,7 +99,7 @@ export async function heavyReasoningNode(state: typeof AgentState.State) {
     // Ask DeepSeek to solve it
     const systemPrompt = new SystemMessage("You are an expert mathematical and logical reasoner. Solve the user's problem step-by-step and show your work clearly. Do NOT act cute or like an elephant. Just provide the dry, accurate, deeply reasoned answer.");
 
-    const response = await deepseekReasoner.invoke([systemPrompt, ...messages]);
+    const response = await getDeepseekReasoner().invoke([systemPrompt, ...messages]);
 
     return { reasoningResult: response.content as string };
 }
@@ -127,7 +127,7 @@ KNOWLEDGE PAYLOAD:
 ${knowledgePayload || "No specific context available, just answer generally as an AI tutor."}
 `;
 
-    const finalResponse = await qwenRouter.invoke([new SystemMessage(systemInstructions), ...messages]);
+    const finalResponse = await getQwenRouter().invoke([new SystemMessage(systemInstructions), ...messages]);
 
     return { messages: [finalResponse] };
 }

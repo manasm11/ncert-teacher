@@ -6,15 +6,19 @@ beforeEach(() => {
     vi.clearAllMocks();
 });
 
+// Mock LLM instances
+const mockQwenRouter = {
+    withStructuredOutput: vi.fn(),
+    invoke: vi.fn(),
+};
+const mockDeepseekReasoner = {
+    invoke: vi.fn(),
+};
+
 // Mock the LLM module before importing nodes
 vi.mock("@/lib/agent/llm", () => ({
-    qwenRouter: {
-        withStructuredOutput: vi.fn(),
-        invoke: vi.fn(),
-    },
-    deepseekReasoner: {
-        invoke: vi.fn(),
-    },
+    getQwenRouter: () => mockQwenRouter,
+    getDeepseekReasoner: () => mockDeepseekReasoner,
 }));
 
 // Mock the env module
@@ -37,7 +41,6 @@ import {
     heavyReasoningNode,
     synthesisNode,
 } from "@/lib/agent/nodes";
-import { qwenRouter, deepseekReasoner } from "@/lib/agent/llm";
 import { serverEnv } from "@/lib/env";
 
 describe("textbookRetrievalNode", () => {
@@ -232,9 +235,9 @@ describe("routerNode", () => {
             reasoning_prompt: "Solve the integral of x^2",
         });
 
-        vi.mocked(qwenRouter.withStructuredOutput).mockReturnValue({
+        mockQwenRouter.withStructuredOutput.mockReturnValue({
             invoke: mockInvoke,
-        } as never);
+        });
 
         const state = {
             messages: [new HumanMessage("Solve the integral of x^2")],
@@ -258,9 +261,9 @@ describe("routerNode", () => {
             search_query: "latest climate news",
         });
 
-        vi.mocked(qwenRouter.withStructuredOutput).mockReturnValue({
+        mockQwenRouter.withStructuredOutput.mockReturnValue({
             invoke: mockInvoke,
-        } as never);
+        });
 
         const state = {
             messages: [new HumanMessage("What is the latest climate news?")],
@@ -283,9 +286,9 @@ describe("routerNode", () => {
             search_query: "photosynthesis process",
         });
 
-        vi.mocked(qwenRouter.withStructuredOutput).mockReturnValue({
+        mockQwenRouter.withStructuredOutput.mockReturnValue({
             invoke: mockInvoke,
-        } as never);
+        });
 
         const state = {
             messages: [new HumanMessage("What is photosynthesis?")],
@@ -307,9 +310,9 @@ describe("routerNode", () => {
             intent: "heavy_reasoning",
         });
 
-        vi.mocked(qwenRouter.withStructuredOutput).mockReturnValue({
+        mockQwenRouter.withStructuredOutput.mockReturnValue({
             invoke: mockInvoke,
-        } as never);
+        });
 
         const state = {
             messages: [new HumanMessage("What is 2+2?")],
@@ -327,9 +330,9 @@ describe("routerNode", () => {
 
 describe("heavyReasoningNode", () => {
     it("invokes deepseek with system prompt and user messages", async () => {
-        vi.mocked(deepseekReasoner.invoke).mockResolvedValue({
+        mockDeepseekReasoner.invoke.mockResolvedValue({
             content: "Step 1: ... Step 2: ... The answer is 42.",
-        } as never);
+        });
 
         const state = {
             messages: [new HumanMessage("What is the meaning of life?")],
@@ -342,7 +345,7 @@ describe("heavyReasoningNode", () => {
 
         const result = await heavyReasoningNode(state);
 
-        expect(deepseekReasoner.invoke).toHaveBeenCalled();
+        expect(mockDeepseekReasoner.invoke).toHaveBeenCalled();
         expect(result.reasoningResult).toContain("42");
     });
 });
@@ -353,7 +356,7 @@ describe("synthesisNode", () => {
     });
 
     it("synthesizes response with textbook context", async () => {
-        vi.mocked(qwenRouter.invoke).mockResolvedValue({
+        mockQwenRouter.invoke.mockResolvedValue({
             content:
                 "Photosynthesis is the process by which plants make food! 🐘🌿",
         } as never);
@@ -369,12 +372,12 @@ describe("synthesisNode", () => {
 
         const result = await synthesisNode(state);
 
-        expect(qwenRouter.invoke).toHaveBeenCalled();
+        expect(mockQwenRouter.invoke).toHaveBeenCalled();
         expect(result.messages).toHaveLength(1);
     });
 
     it("includes reasoning result in knowledge payload", async () => {
-        vi.mocked(qwenRouter.invoke).mockResolvedValue({
+        mockQwenRouter.invoke.mockResolvedValue({
             content: "The answer to the integral is x^3/3 + C 🐘",
         } as never);
 
@@ -390,7 +393,7 @@ describe("synthesisNode", () => {
         const result = await synthesisNode(state);
 
         // Verify the invoke was called with system message containing reasoning
-        const invokeArgs = vi.mocked(qwenRouter.invoke).mock.calls[0][0];
+        const invokeArgs = mockQwenRouter.invoke.mock.calls[0][0];
         const systemMsg = invokeArgs[0];
         expect(typeof systemMsg.content === "string" && systemMsg.content).toContain(
             "Expert Reasoning Result"
@@ -399,7 +402,7 @@ describe("synthesisNode", () => {
     });
 
     it("includes web search context in knowledge payload", async () => {
-        vi.mocked(qwenRouter.invoke).mockResolvedValue({
+        mockQwenRouter.invoke.mockResolvedValue({
             content: "Based on recent news... 🐘",
         } as never);
 
@@ -414,7 +417,7 @@ describe("synthesisNode", () => {
 
         const result = await synthesisNode(state);
 
-        const invokeArgs = vi.mocked(qwenRouter.invoke).mock.calls[0][0];
+        const invokeArgs = mockQwenRouter.invoke.mock.calls[0][0];
         const systemMsg = invokeArgs[0];
         expect(typeof systemMsg.content === "string" && systemMsg.content).toContain(
             "Web Search Context"
@@ -423,7 +426,7 @@ describe("synthesisNode", () => {
     });
 
     it("uses default class grade when not provided", async () => {
-        vi.mocked(qwenRouter.invoke).mockResolvedValue({
+        mockQwenRouter.invoke.mockResolvedValue({
             content: "Hello! 🐘",
         } as never);
 
@@ -438,7 +441,7 @@ describe("synthesisNode", () => {
 
         await synthesisNode(state);
 
-        const invokeArgs = vi.mocked(qwenRouter.invoke).mock.calls[0][0];
+        const invokeArgs = mockQwenRouter.invoke.mock.calls[0][0];
         const systemMsg = invokeArgs[0];
         expect(typeof systemMsg.content === "string" && systemMsg.content).toContain(
             "Class student"
