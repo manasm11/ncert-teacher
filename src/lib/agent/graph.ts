@@ -3,7 +3,7 @@ import { AgentState } from "./state";
 import { routerNode, textbookRetrievalNode, webSearchNode, heavyReasoningNode, synthesisNode } from "./nodes";
 
 // Determine which node to run next based on the router's output state
-function decideNextNode(state: typeof AgentState.State) {
+export function decideNextNode(state: typeof AgentState.State) {
     const messages = state.messages;
     const lastMessage = messages[messages.length - 1];
 
