@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 import { updateProfile, uploadAvatar, deleteAccount } from "./actions";
@@ -52,7 +52,7 @@ const LANGUAGES = [
 
 const GRADES = Array.from({ length: 12 }, (_, i) => i + 1);
 
-export default function ProfilePage() {
+function ProfilePageContent() {
     const { user, loading: userLoading } = useUser();
     const [profile, setProfile] = useState<Profile | null>(null);
     const [stats, setStats] = useState<Stats>({
@@ -406,5 +406,13 @@ export default function ProfilePage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function ProfilePage() {
+    return (
+        <Suspense>
+            <ProfilePageContent />
+        </Suspense>
     );
 }
