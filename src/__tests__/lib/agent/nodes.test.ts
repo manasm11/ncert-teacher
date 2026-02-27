@@ -34,6 +34,12 @@ vi.mock("@/lib/env", () => ({
     },
 }));
 
+// Mock the vector store module used by textbookRetrievalNode
+const mockSimilaritySearch = vi.fn();
+vi.mock("@/lib/rag/vectorStore", () => ({
+    similaritySearch: (...args: unknown[]) => mockSimilaritySearch(...args),
+}));
+
 import {
     routerNode,
     textbookRetrievalNode,
@@ -44,9 +50,100 @@ import {
 import { serverEnv } from "@/lib/env";
 
 describe("textbookRetrievalNode", () => {
-    it("returns placeholder context", async () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it("calls similaritySearch with user query and context filters", async () => {
+        mockSimilaritySearch.mockResolvedValue([
+            {
+                id: "uuid-1",
+                content: "Photosynthesis is the process by which plants make food.",
+                subject: "Science",
+                grade: "6",
+                chapter: "Chapter 1",
+                heading_hierarchy: ["Biology", "Photosynthesis"],
+                similarity: 0.95,
+            },
+        ]);
+
         const state = {
             messages: [new HumanMessage("What is photosynthesis?")],
+            userContext: { subject: "Science", classGrade: "6", chapter: "Chapter 1" },
+            requiresHeavyReasoning: false,
+            retrievedContext: "",
+            webSearchContext: "",
+            reasoningResult: "",
+        };
+
+        const result = await textbookRetrievalNode(state);
+
+        expect(mockSimilaritySearch).toHaveBeenCalledWith(
+            "What is photosynthesis?",
+            5,
+            { subject: "Science", grade: "6", chapter: "Chapter 1" },
+        );
+        expect(result.retrievedContext).toContain("Photosynthesis is the process");
+    });
+
+    it("extracts query from router system message", async () => {
+        mockSimilaritySearch.mockResolvedValue([
+            {
+                id: "uuid-1",
+                content: "Content about the topic.",
+                subject: "Science",
+                grade: "6",
+                chapter: "Chapter 1",
+                heading_hierarchy: [],
+                similarity: 0.9,
+            },
+        ]);
+
+        const state = {
+            messages: [
+                new HumanMessage("Tell me about cells"),
+                new SystemMessage("ROUTER DECISION: Textbook retrieval for: cell biology basics"),
+            ],
+            userContext: {},
+            requiresHeavyReasoning: false,
+            retrievedContext: "",
+            webSearchContext: "",
+            reasoningResult: "",
+        };
+
+        await textbookRetrievalNode(state);
+
+        expect(mockSimilaritySearch).toHaveBeenCalledWith(
+            "cell biology basics",
+            5,
+            expect.any(Object),
+        );
+    });
+
+    it("formats multiple results with indices and heading hierarchy", async () => {
+        mockSimilaritySearch.mockResolvedValue([
+            {
+                id: "uuid-1",
+                content: "First chunk content.",
+                subject: "Science",
+                grade: "6",
+                chapter: "Ch1",
+                heading_hierarchy: ["Biology", "Cells"],
+                similarity: 0.95,
+            },
+            {
+                id: "uuid-2",
+                content: "Second chunk content.",
+                subject: "Science",
+                grade: "6",
+                chapter: "Ch1",
+                heading_hierarchy: ["Biology", "Cells", "Types"],
+                similarity: 0.88,
+            },
+        ]);
+
+        const state = {
+            messages: [new HumanMessage("Tell me about cells")],
             userContext: {},
             requiresHeavyReasoning: false,
             retrievedContext: "",
@@ -56,9 +153,97 @@ describe("textbookRetrievalNode", () => {
 
         const result = await textbookRetrievalNode(state);
 
-        expect(result).toHaveProperty("retrievedContext");
-        expect(result.retrievedContext).toContain("placeholder");
-        expect(result.retrievedContext).toContain("NCERT");
+        expect(result.retrievedContext).toContain("[1]");
+        expect(result.retrievedContext).toContain("[2]");
+        expect(result.retrievedContext).toContain("Biology > Cells");
+        expect(result.retrievedContext).toContain("Biology > Cells > Types");
+        expect(result.retrievedContext).toContain("First chunk content.");
+        expect(result.retrievedContext).toContain("Second chunk content.");
+    });
+
+    it("returns no-results message when search returns empty", async () => {
+        mockSimilaritySearch.mockResolvedValue([]);
+
+        const state = {
+            messages: [new HumanMessage("obscure topic")],
+            userContext: {},
+            requiresHeavyReasoning: false,
+            retrievedContext: "",
+            webSearchContext: "",
+            reasoningResult: "",
+        };
+
+        const result = await textbookRetrievalNode(state);
+
+        expect(result.retrievedContext).toContain("No relevant textbook content found");
+    });
+
+    it("handles error from similaritySearch gracefully", async () => {
+        mockSimilaritySearch.mockRejectedValue(new Error("Database connection failed"));
+
+        const state = {
+            messages: [new HumanMessage("test query")],
+            userContext: {},
+            requiresHeavyReasoning: false,
+            retrievedContext: "",
+            webSearchContext: "",
+            reasoningResult: "",
+        };
+
+        const result = await textbookRetrievalNode(state);
+
+        expect(result.retrievedContext).toContain("Textbook retrieval encountered an error");
+    });
+
+    it("handles chunks with empty heading hierarchy", async () => {
+        mockSimilaritySearch.mockResolvedValue([
+            {
+                id: "uuid-1",
+                content: "Content without headings.",
+                subject: "Science",
+                grade: "6",
+                chapter: "Ch1",
+                heading_hierarchy: [],
+                similarity: 0.85,
+            },
+        ]);
+
+        const state = {
+            messages: [new HumanMessage("test")],
+            userContext: {},
+            requiresHeavyReasoning: false,
+            retrievedContext: "",
+            webSearchContext: "",
+            reasoningResult: "",
+        };
+
+        const result = await textbookRetrievalNode(state);
+
+        expect(result.retrievedContext).toContain("[1]");
+        expect(result.retrievedContext).toContain("Content without headings.");
+        // Should not contain " > " since hierarchy is empty
+        expect(result.retrievedContext).not.toContain(" > ");
+    });
+
+    it("passes undefined filters when userContext is empty", async () => {
+        mockSimilaritySearch.mockResolvedValue([]);
+
+        const state = {
+            messages: [new HumanMessage("test")],
+            userContext: {},
+            requiresHeavyReasoning: false,
+            retrievedContext: "",
+            webSearchContext: "",
+            reasoningResult: "",
+        };
+
+        await textbookRetrievalNode(state);
+
+        expect(mockSimilaritySearch).toHaveBeenCalledWith("test", 5, {
+            subject: undefined,
+            grade: undefined,
+            chapter: undefined,
+        });
     });
 });
 

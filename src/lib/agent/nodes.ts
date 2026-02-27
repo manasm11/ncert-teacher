@@ -3,6 +3,7 @@ import { getQwenRouter, getDeepseekReasoner } from "./llm";
 import { SystemMessage } from "@langchain/core/messages";
 import { z } from "zod";
 import { serverEnv } from "@/lib/env";
+import { similaritySearch } from "@/lib/rag/vectorStore";
 
 // --- Tool definition for the router ---
 const routingSchema = z.object({
@@ -49,17 +50,46 @@ Respond ONLY with the structured output calling the routing schema.`);
     }
 }
 
-export async function textbookRetrievalNode(_state: typeof AgentState.State) {
-    // Placeholder for true Supabase pgvector retrieval
-    // For the MVP, we just mock retrieving context.
+export async function textbookRetrievalNode(state: typeof AgentState.State) {
+    const { messages, userContext } = state;
+    const lastMessage = messages[messages.length - 1];
+    let query = typeof lastMessage.content === "string" ? lastMessage.content : "";
 
-    // In reality: 
-    // const embeddings = new OllamaEmbeddings(...)
-    // const vectorStore = new SupabaseVectorStore(...)
-    // const results = await vectorStore.similaritySearch(query, 3);
+    // Extract the search query from router's system message if available
+    const systemMsg = messages.find(
+        m => typeof m.content === "string" && m.content.includes("Textbook retrieval for:")
+    );
+    if (systemMsg) {
+        query = (systemMsg.content as string)
+            .replace("ROUTER DECISION: Textbook retrieval for:", "")
+            .trim() || query;
+    }
 
-    const fakeContext = "This is placeholder text retrieved from the NCERT Chapter database about the topic.";
-    return { retrievedContext: fakeContext };
+    try {
+        const results = await similaritySearch(query, 5, {
+            subject: userContext.subject,
+            grade: userContext.classGrade,
+            chapter: userContext.chapter,
+        });
+
+        if (results.length === 0) {
+            return { retrievedContext: "No relevant textbook content found for this query." };
+        }
+
+        const context = results
+            .map((chunk, i) => {
+                const heading = chunk.heading_hierarchy?.length
+                    ? ` (${chunk.heading_hierarchy.join(" > ")})`
+                    : "";
+                return `[${i + 1}]${heading}: ${chunk.content}`;
+            })
+            .join("\n\n");
+
+        return { retrievedContext: context };
+    } catch (err: unknown) {
+        console.error("Textbook retrieval failed:", err);
+        return { retrievedContext: "Textbook retrieval encountered an error. Proceed with general knowledge." };
+    }
 }
 
 export async function webSearchNode(state: typeof AgentState.State) {
