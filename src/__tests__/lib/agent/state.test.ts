@@ -142,4 +142,38 @@ describe("AgentState", () => {
             ).toBe("x^3/3 + C");
         });
     });
+
+    describe("routingMetadata annotation", () => {
+        it("has a default value with unknown intent", () => {
+            const spec = AgentState.spec;
+            const defaultVal = spec.routingMetadata.initialValueFactory();
+
+            expect(defaultVal.intent).toBe("unknown");
+            expect(defaultVal.confidence).toBe(0);
+            expect(defaultVal.routingReason).toBe("Not routed yet");
+            expect(defaultVal.timestamp).toBeDefined();
+        });
+
+        it("always takes the latest value via reducer", () => {
+            const spec = AgentState.spec;
+
+            const existing = {
+                intent: "textbook",
+                confidence: 0.8,
+                timestamp: "2026-01-01T00:00:00Z",
+                routingReason: "Routed to textbook with 80% confidence"
+            };
+
+            const incoming = {
+                intent: "web_search",
+                confidence: 0.9,
+                timestamp: "2026-01-01T00:01:00Z",
+                routingReason: "Routed to web_search with 90% confidence"
+            };
+
+            const result = spec.routingMetadata.operator(existing, incoming);
+
+            expect(result).toEqual(incoming);
+        });
+    });
 });

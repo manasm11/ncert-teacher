@@ -417,6 +417,7 @@ describe("routerNode", () => {
     it("routes to heavy_reasoning for complex math questions", async () => {
         const mockInvoke = vi.fn().mockResolvedValue({
             intent: "heavy_reasoning",
+            confidence: 0.95,
             reasoning_prompt: "Solve the integral of x^2",
         });
 
@@ -436,6 +437,8 @@ describe("routerNode", () => {
         const result = await routerNode(state);
 
         expect(result.requiresHeavyReasoning).toBe(true);
+        expect(result.routingMetadata.intent).toBe("heavy_reasoning");
+        expect(result.routingMetadata.confidence).toBe(0.95);
         expect(result.messages).toHaveLength(1);
         expect(result.messages[0].content).toContain("Heavy reasoning");
     });
@@ -443,6 +446,7 @@ describe("routerNode", () => {
     it("routes to web_search for current events", async () => {
         const mockInvoke = vi.fn().mockResolvedValue({
             intent: "web_search",
+            confidence: 0.85,
             search_query: "latest climate news",
         });
 
@@ -462,12 +466,15 @@ describe("routerNode", () => {
         const result = await routerNode(state);
 
         expect(result.requiresHeavyReasoning).toBe(false);
+        expect(result.routingMetadata.intent).toBe("web_search");
+        expect(result.routingMetadata.confidence).toBe(0.85);
         expect(result.messages[0].content).toContain("Web search");
     });
 
     it("routes to textbook for curriculum topics", async () => {
         const mockInvoke = vi.fn().mockResolvedValue({
             intent: "textbook",
+            confidence: 0.9,
             search_query: "photosynthesis process",
         });
 
@@ -487,12 +494,100 @@ describe("routerNode", () => {
         const result = await routerNode(state);
 
         expect(result.requiresHeavyReasoning).toBe(false);
+        expect(result.routingMetadata.intent).toBe("textbook");
+        expect(result.routingMetadata.confidence).toBe(0.9);
         expect(result.messages[0].content).toContain("Textbook retrieval");
+    });
+
+    it("routes to greeting for casual messages", async () => {
+        const mockInvoke = vi.fn().mockResolvedValue({
+            intent: "greeting",
+            confidence: 0.98,
+        });
+
+        mockQwenRouter.withStructuredOutput.mockReturnValue({
+            invoke: mockInvoke,
+        });
+
+        const state = {
+            messages: [new HumanMessage("Hi there!")],
+            userContext: {},
+            requiresHeavyReasoning: false,
+            retrievedContext: "",
+            webSearchContext: "",
+            reasoningResult: "",
+        };
+
+        const result = await routerNode(state);
+
+        expect(result.requiresHeavyReasoning).toBe(false);
+        expect(result.routingMetadata.intent).toBe("greeting");
+        expect(result.routingMetadata.confidence).toBe(0.98);
+        expect(result.messages[0].content).toContain("Greeting detected");
+    });
+
+    it("routes to follow_up for follow-up questions", async () => {
+        const mockInvoke = vi.fn().mockResolvedValue({
+            intent: "follow_up",
+            confidence: 0.88,
+        });
+
+        mockQwenRouter.withStructuredOutput.mockReturnValue({
+            invoke: mockInvoke,
+        });
+
+        const state = {
+            messages: [
+                new HumanMessage("What is photosynthesis?"),
+                new SystemMessage("ROUTER DECISION: Textbook retrieval for: photosynthesis process"),
+                new HumanMessage("Can you explain it more?")
+            ],
+            userContext: {},
+            requiresHeavyReasoning: false,
+            retrievedContext: "",
+            webSearchContext: "",
+            reasoningResult: "",
+        };
+
+        const result = await routerNode(state);
+
+        expect(result.requiresHeavyReasoning).toBe(false);
+        expect(result.routingMetadata.intent).toBe("follow_up");
+        expect(result.routingMetadata.confidence).toBe(0.88);
+        expect(result.messages[0].content).toContain("Follow-up question detected");
+    });
+
+    it("routes to off_topic for unrelated questions", async () => {
+        const mockInvoke = vi.fn().mockResolvedValue({
+            intent: "off_topic",
+            confidence: 0.92,
+        });
+
+        mockQwenRouter.withStructuredOutput.mockReturnValue({
+            invoke: mockInvoke,
+        });
+
+        const state = {
+            messages: [new HumanMessage("What's your favorite movie?")],
+            userContext: {},
+            requiresHeavyReasoning: false,
+            retrievedContext: "",
+            webSearchContext: "",
+            reasoningResult: "",
+        };
+
+        const result = await routerNode(state);
+
+        expect(result.requiresHeavyReasoning).toBe(false);
+        expect(result.routingMetadata.intent).toBe("off_topic");
+        expect(result.routingMetadata.confidence).toBe(0.92);
+        expect(result.messages[0].content).toContain("Off-topic detected");
     });
 
     it("falls back to user message when reasoning_prompt is absent", async () => {
         const mockInvoke = vi.fn().mockResolvedValue({
             intent: "heavy_reasoning",
+            confidence: 0.9,
         });
 
         mockQwenRouter.withStructuredOutput.mockReturnValue({
