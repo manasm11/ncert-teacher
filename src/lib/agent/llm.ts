@@ -1,8 +1,8 @@
 import { ChatOpenAI } from "@langchain/openai";
+import { serverEnv } from "@/lib/env";
 
-// If Ollama cloud acts purely openai-compatible:
-const baseURL = process.env.OLLAMA_CLOUD_ENDPOINT;
-const apiKey = process.env.OLLAMA_CLOUD_API_KEY;
+const baseURL = serverEnv.OLLAMA_CLOUD_ENDPOINT;
+const apiKey = serverEnv.OLLAMA_CLOUD_API_KEY;
 
 export const qwenRouter = new ChatOpenAI({
     modelName: "qwen:3.5", // Standard Ollama tagging convention or user's specific provider tag
