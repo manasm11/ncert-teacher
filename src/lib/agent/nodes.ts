@@ -2,6 +2,7 @@ import { AgentState } from "./state";
 import { qwenRouter, deepseekReasoner } from "./llm";
 import { SystemMessage } from "@langchain/core/messages";
 import { z } from "zod";
+import { serverEnv } from "@/lib/env";
 
 // --- Tool definition for the router ---
 const routingSchema = z.object({
@@ -73,7 +74,7 @@ export async function webSearchNode(state: typeof AgentState.State) {
     }
 
     try {
-        const searxngUrl = process.env.SEARXNG_URL;
+        const searxngUrl = serverEnv.SEARXNG_URL;
         if (!searxngUrl) {
             console.warn("SEARXNG_URL is not set. Using fake web search.");
             return { webSearchContext: "Placeholder web search result: The query was " + query };
