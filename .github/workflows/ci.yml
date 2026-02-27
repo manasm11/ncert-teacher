@@ -60,3 +60,21 @@ jobs:
       - run: npm ci
 
       - run: npm run build
+
+  # Gate job: single required status check for branch protection.
+  # All CI jobs must pass before a PR can be merged.
+  ci-pass:
+    name: CI Pass
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [lint, test, build]
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [[ "${{ needs.lint.result }}" != "success" ||
+                "${{ needs.test.result }}" != "success" ||
+                "${{ needs.build.result }}" != "success" ]]; then
+            echo "One or more CI jobs failed"
+            exit 1
+          fi
+          echo "All CI jobs passed"
