@@ -28,6 +28,7 @@ export const PROTECTED_ROUTES: { prefix: string; minRole: Role }[] = [
     { prefix: "/teacher", minRole: ROLES.TEACHER },
     { prefix: "/dashboard", minRole: ROLES.STUDENT },
     { prefix: "/learn", minRole: ROLES.STUDENT },
+    { prefix: "/profile", minRole: ROLES.STUDENT },
 ];
 
 /** Routes that authenticated users should be redirected away from */
