@@ -41,7 +41,10 @@ describe("POST /api/chat", () => {
 
         expect(res.status).toBe(400);
         const data = await res.json();
-        expect(data.error).toBe("Invalid messages array");
+        expect(data.success).toBe(false);
+        expect(data.error).toBeDefined();
+        expect(data.error?.code).toBe("VALIDATION_ERROR");
+        expect(data.error?.message).toMatch(/Validation|Invalid input/i);
     });
 
     it("returns 400 for non-array messages", async () => {
@@ -50,7 +53,10 @@ describe("POST /api/chat", () => {
 
         expect(res.status).toBe(400);
         const data = await res.json();
-        expect(data.error).toBe("Invalid messages array");
+        expect(data.success).toBe(false);
+        expect(data.error).toBeDefined();
+        expect(data.error?.code).toBe("VALIDATION_ERROR");
+        expect(data.error?.message).toMatch(/Validation|Invalid input/i);
     });
 
     it("returns 400 for null messages", async () => {
@@ -84,12 +90,13 @@ describe("POST /api/chat", () => {
         });
 
         const res = await POST(req);
-        expect(res.status).toBe(200);
+        expect(res.status).toBe(201);
 
         const data = await res.json();
-        expect(data.role).toBe("assistant");
-        expect(data.text).toContain("Gyanu");
-        expect(data.metadata).toBeDefined();
+        expect(data.success).toBe(true);
+        expect(data.data?.role).toBe("assistant");
+        expect(data.data?.text).toContain("Gyanu");
+        expect(data.data?.metadata).toBeDefined();
     });
 
     it("passes user context to the graph", async () => {
@@ -164,7 +171,7 @@ describe("POST /api/chat", () => {
         const res = await POST(req);
         const data = await res.json();
 
-        expect(data.metadata.routedTo).toBe("Heavy Reasoning (DeepSeek)");
+        expect(data.data?.metadata.routedTo).toBe("Heavy Reasoning (DeepSeek)");
     });
 
     it("returns 500 on graph invocation error", async () => {
@@ -180,7 +187,10 @@ describe("POST /api/chat", () => {
         expect(res.status).toBe(500);
 
         const data = await res.json();
-        expect(data.error).toBe("LLM timeout");
+        expect(data.success).toBe(false);
+        expect(data.error).toBeDefined();
+        expect(data.error?.message).toBe("LLM timeout");
+        expect(data.error?.code).toBe("INTERNAL_SERVER_ERROR");
     });
 
     it("returns generic error message for non-Error exceptions", async () => {
@@ -196,7 +206,10 @@ describe("POST /api/chat", () => {
         expect(res.status).toBe(500);
 
         const data = await res.json();
-        expect(data.error).toContain("Something went wrong");
+        expect(data.success).toBe(false);
+        expect(data.error).toBeDefined();
+        expect(data.error?.message).toContain("Something went wrong");
+        expect(data.error?.code).toBe("INTERNAL_SERVER_ERROR");
     });
 
     it("uses the last message text from the messages array", async () => {
