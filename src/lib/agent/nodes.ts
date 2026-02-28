@@ -4,6 +4,16 @@ import { SystemMessage } from "@langchain/core/messages";
 import { z } from "zod";
 import { serverEnv } from "@/lib/env";
 import { similaritySearch } from "@/lib/rag/vectorStore";
+import {
+    getCachedResults,
+    setCachedResults,
+    searchSearXNG,
+    searchDuckDuckGo,
+    formatResults,
+    validateSearchConfig,
+    categoriesToSearch,
+    MAX_SEARCHES_PER_SESSION,
+} from "./webSearch";
 
 // --- Tool definition for the router ---
 const routingSchema = z.object({
@@ -103,23 +113,64 @@ export async function webSearchNode(state: typeof AgentState.State) {
         query = (systemMsg.content as string).replace("ROUTER DECISION: Web search required for:", "").trim() || query;
     }
 
+    // --- Enforce max searches per session ---
+    const currentCount = state.searchCount ?? 0;
+    if (currentCount >= MAX_SEARCHES_PER_SESSION) {
+        return {
+            webSearchContext: "Search limit reached (maximum 5 searches per session). Proceed with general knowledge.",
+            searchCount: currentCount,
+        };
+    }
+
+    // --- Check cache first ---
+    const cached = getCachedResults(query);
+    if (cached) {
+        // Cache hit does NOT count against the session limit
+        return {
+            webSearchContext: formatResults(cached),
+            searchCount: currentCount,
+        };
+    }
+
+    // --- Validate configuration ---
+    const searxngUrl = serverEnv.SEARXNG_URL;
+    const config = validateSearchConfig(searxngUrl);
+    if (!config.valid) {
+        console.warn(config.message);
+    }
+
+    // Determine search categories from user context
+    const categories = categoriesToSearch(state.userContext?.subject);
+
     try {
-        const searxngUrl = serverEnv.SEARXNG_URL;
-        if (!searxngUrl) {
-            console.warn("SEARXNG_URL is not set. Using fake web search.");
-            return { webSearchContext: "Placeholder web search result: The query was " + query };
+        let results;
+
+        // Try SearXNG first (if configured)
+        if (searxngUrl) {
+            try {
+                results = await searchSearXNG(searxngUrl, query, categories);
+            } catch (searxErr: unknown) {
+                console.warn("SearXNG failed, falling back to DuckDuckGo:", searxErr);
+                results = await searchDuckDuckGo(query);
+            }
+        } else {
+            // No SearXNG – go straight to DuckDuckGo fallback
+            results = await searchDuckDuckGo(query);
         }
 
-        const response = await fetch(`${searxngUrl}/search?q=${encodeURIComponent(query)}&format=json`);
-        if (!response.ok) throw new Error("SearXNG request failed");
+        // Cache and format (ranking + summarisation happen inside formatResults)
+        setCachedResults(query, results);
 
-        const data = await response.json();
-        const topResults = data.results?.slice(0, 3).map((r: { title: string; content: string }) => `- ${r.title}: ${r.content}`).join("\n");
-
-        return { webSearchContext: topResults ? `Top Web Search Results:\n${topResults}` : "No results found on the web." };
+        return {
+            webSearchContext: formatResults(results),
+            searchCount: currentCount + 1,
+        };
     } catch (err: unknown) {
         console.error("Web search failed:", err);
-        return { webSearchContext: "Web search failed. Proceed with general knowledge." };
+        return {
+            webSearchContext: "Web search failed. Proceed with general knowledge.",
+            searchCount: currentCount + 1,
+        };
     }
 }
 

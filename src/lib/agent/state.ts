@@ -35,4 +35,9 @@ export const AgentState = Annotation.Root({
         reducer: (x, y) => y,
         default: () => "",
     }),
+    // Number of web searches performed in this session (max 5)
+    searchCount: Annotation<number>({
+        reducer: (x, y) => y,
+        default: () => 0,
+    }),
 });

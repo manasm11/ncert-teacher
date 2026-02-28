@@ -40,6 +40,25 @@ vi.mock("@/lib/rag/vectorStore", () => ({
     similaritySearch: (...args: unknown[]) => mockSimilaritySearch(...args),
 }));
 
+// Mock the webSearch module used by webSearchNode
+const mockGetCachedResults = vi.fn();
+const mockSetCachedResults = vi.fn();
+const mockSearchSearXNG = vi.fn();
+const mockSearchDuckDuckGo = vi.fn();
+const mockFormatResults = vi.fn();
+const mockValidateSearchConfig = vi.fn();
+const mockCategoriesToSearch = vi.fn();
+vi.mock("@/lib/agent/webSearch", () => ({
+    getCachedResults: (...args: unknown[]) => mockGetCachedResults(...args),
+    setCachedResults: (...args: unknown[]) => mockSetCachedResults(...args),
+    searchSearXNG: (...args: unknown[]) => mockSearchSearXNG(...args),
+    searchDuckDuckGo: (...args: unknown[]) => mockSearchDuckDuckGo(...args),
+    formatResults: (...args: unknown[]) => mockFormatResults(...args),
+    validateSearchConfig: (...args: unknown[]) => mockValidateSearchConfig(...args),
+    categoriesToSearch: (...args: unknown[]) => mockCategoriesToSearch(...args),
+    MAX_SEARCHES_PER_SESSION: 5,
+}));
+
 import {
     routerNode,
     textbookRetrievalNode,
@@ -249,10 +268,19 @@ describe("textbookRetrievalNode", () => {
 
 describe("webSearchNode", () => {
     beforeEach(() => {
-        vi.restoreAllMocks();
+        vi.clearAllMocks();
+        mockGetCachedResults.mockReturnValue(null);
+        mockValidateSearchConfig.mockReturnValue({ valid: false, message: "not set" });
+        mockCategoriesToSearch.mockReturnValue(["general"]);
+        mockFormatResults.mockImplementation((results: unknown[]) =>
+            results.length ? "Top Web Search Results:\n- Formatted" : "No results found on the web.",
+        );
     });
 
-    it("returns placeholder when SEARXNG_URL is not set", async () => {
+    it("uses DuckDuckGo when SEARXNG_URL is not set", async () => {
+        const ddgResults = [{ title: "DDG Result", content: "Content", url: "https://ddg.com", score: 0 }];
+        mockSearchDuckDuckGo.mockResolvedValue(ddgResults);
+
         const state = {
             messages: [new HumanMessage("latest news")],
             userContext: {},
@@ -260,63 +288,45 @@ describe("webSearchNode", () => {
             retrievedContext: "",
             webSearchContext: "",
             reasoningResult: "",
+            searchCount: 0,
         };
 
         const result = await webSearchNode(state);
 
+        expect(mockSearchDuckDuckGo).toHaveBeenCalledWith("latest news");
+        expect(mockSearchSearXNG).not.toHaveBeenCalled();
         expect(result).toHaveProperty("webSearchContext");
-        expect(result.webSearchContext).toContain("Placeholder");
-    });
-
-    it("includes the query in placeholder result", async () => {
-        const state = {
-            messages: [new HumanMessage("climate change 2024")],
-            userContext: {},
-            requiresHeavyReasoning: false,
-            retrievedContext: "",
-            webSearchContext: "",
-            reasoningResult: "",
-        };
-
-        const result = await webSearchNode(state);
-        expect(result.webSearchContext).toContain("climate change 2024");
+        expect(result.searchCount).toBe(1);
     });
 
     it("extracts search query from router system message", async () => {
+        mockSearchDuckDuckGo.mockResolvedValue([]);
+
         const state = {
             messages: [
                 new HumanMessage("What are current events?"),
-                new SystemMessage(
-                    "ROUTER DECISION: Web search required for: current events today"
-                ),
+                new SystemMessage("ROUTER DECISION: Web search required for: current events today"),
             ],
             userContext: {},
             requiresHeavyReasoning: false,
             retrievedContext: "",
             webSearchContext: "",
             reasoningResult: "",
+            searchCount: 0,
         };
 
-        const result = await webSearchNode(state);
-        expect(result.webSearchContext).toContain("current events today");
+        await webSearchNode(state);
+
+        expect(mockSearchDuckDuckGo).toHaveBeenCalledWith("current events today");
     });
 
-    it("calls SearXNG API when URL is configured", async () => {
-        // Temporarily set SEARXNG_URL
+    it("calls SearXNG when URL is configured", async () => {
         const originalUrl = (serverEnv as { SEARXNG_URL?: string }).SEARXNG_URL;
-        (serverEnv as { SEARXNG_URL?: string }).SEARXNG_URL =
-            "http://localhost:8080";
+        (serverEnv as { SEARXNG_URL?: string }).SEARXNG_URL = "http://localhost:8080";
+        mockValidateSearchConfig.mockReturnValue({ valid: true, message: "ok" });
 
-        const mockFetch = vi.fn().mockResolvedValue({
-            ok: true,
-            json: async () => ({
-                results: [
-                    { title: "Result 1", content: "Content 1" },
-                    { title: "Result 2", content: "Content 2" },
-                ],
-            }),
-        });
-        global.fetch = mockFetch;
+        const searxResults = [{ title: "SearX Result", content: "Content", url: "https://ex.com", score: 0 }];
+        mockSearchSearXNG.mockResolvedValue(searxResults);
 
         const state = {
             messages: [new HumanMessage("test query")],
@@ -325,26 +335,25 @@ describe("webSearchNode", () => {
             retrievedContext: "",
             webSearchContext: "",
             reasoningResult: "",
+            searchCount: 0,
         };
 
         const result = await webSearchNode(state);
 
-        expect(mockFetch).toHaveBeenCalledWith(
-            expect.stringContaining("http://localhost:8080/search")
-        );
-        expect(result.webSearchContext).toContain("Result 1");
-        expect(result.webSearchContext).toContain("Result 2");
+        expect(mockSearchSearXNG).toHaveBeenCalledWith("http://localhost:8080", "test query", ["general"]);
+        expect(mockSetCachedResults).toHaveBeenCalledWith("test query", searxResults);
+        expect(result.searchCount).toBe(1);
 
-        // Restore
         (serverEnv as { SEARXNG_URL?: string }).SEARXNG_URL = originalUrl;
     });
 
-    it("handles SearXNG API failure gracefully", async () => {
+    it("falls back to DuckDuckGo when SearXNG fails", async () => {
         const originalUrl = (serverEnv as { SEARXNG_URL?: string }).SEARXNG_URL;
-        (serverEnv as { SEARXNG_URL?: string }).SEARXNG_URL =
-            "http://localhost:8080";
+        (serverEnv as { SEARXNG_URL?: string }).SEARXNG_URL = "http://localhost:8080";
 
-        global.fetch = vi.fn().mockRejectedValue(new Error("Network error"));
+        mockSearchSearXNG.mockRejectedValue(new Error("SearXNG error"));
+        const ddgResults = [{ title: "DDG Fallback", content: "Content", url: "https://ddg.com", score: 0 }];
+        mockSearchDuckDuckGo.mockResolvedValue(ddgResults);
 
         const state = {
             messages: [new HumanMessage("test query")],
@@ -353,59 +362,150 @@ describe("webSearchNode", () => {
             retrievedContext: "",
             webSearchContext: "",
             reasoningResult: "",
+            searchCount: 0,
+        };
+
+        const result = await webSearchNode(state);
+
+        expect(mockSearchSearXNG).toHaveBeenCalled();
+        expect(mockSearchDuckDuckGo).toHaveBeenCalledWith("test query");
+        expect(result.searchCount).toBe(1);
+
+        (serverEnv as { SEARXNG_URL?: string }).SEARXNG_URL = originalUrl;
+    });
+
+    it("returns cached results without incrementing searchCount", async () => {
+        const cachedResults = [{ title: "Cached", content: "Content", url: "https://cached.com", score: 5 }];
+        mockGetCachedResults.mockReturnValue(cachedResults);
+
+        const state = {
+            messages: [new HumanMessage("cached query")],
+            userContext: {},
+            requiresHeavyReasoning: false,
+            retrievedContext: "",
+            webSearchContext: "",
+            reasoningResult: "",
+            searchCount: 2,
+        };
+
+        const result = await webSearchNode(state);
+
+        expect(mockGetCachedResults).toHaveBeenCalledWith("cached query");
+        expect(mockSearchSearXNG).not.toHaveBeenCalled();
+        expect(mockSearchDuckDuckGo).not.toHaveBeenCalled();
+        expect(result.searchCount).toBe(2); // Not incremented
+    });
+
+    it("enforces max searches per session", async () => {
+        const state = {
+            messages: [new HumanMessage("another query")],
+            userContext: {},
+            requiresHeavyReasoning: false,
+            retrievedContext: "",
+            webSearchContext: "",
+            reasoningResult: "",
+            searchCount: 5,
+        };
+
+        const result = await webSearchNode(state);
+
+        expect(result.webSearchContext).toContain("Search limit reached");
+        expect(result.searchCount).toBe(5);
+        expect(mockSearchSearXNG).not.toHaveBeenCalled();
+        expect(mockSearchDuckDuckGo).not.toHaveBeenCalled();
+    });
+
+    it("handles both SearXNG and DuckDuckGo failing", async () => {
+        const originalUrl = (serverEnv as { SEARXNG_URL?: string }).SEARXNG_URL;
+        (serverEnv as { SEARXNG_URL?: string }).SEARXNG_URL = "http://localhost:8080";
+
+        mockSearchSearXNG.mockRejectedValue(new Error("SearXNG down"));
+        mockSearchDuckDuckGo.mockRejectedValue(new Error("DDG down"));
+
+        const state = {
+            messages: [new HumanMessage("test query")],
+            userContext: {},
+            requiresHeavyReasoning: false,
+            retrievedContext: "",
+            webSearchContext: "",
+            reasoningResult: "",
+            searchCount: 0,
         };
 
         const result = await webSearchNode(state);
         expect(result.webSearchContext).toContain("Web search failed");
+        expect(result.searchCount).toBe(1);
 
         (serverEnv as { SEARXNG_URL?: string }).SEARXNG_URL = originalUrl;
     });
 
-    it("handles SearXNG non-OK response", async () => {
-        const originalUrl = (serverEnv as { SEARXNG_URL?: string }).SEARXNG_URL;
-        (serverEnv as { SEARXNG_URL?: string }).SEARXNG_URL =
-            "http://localhost:8080";
-
-        global.fetch = vi.fn().mockResolvedValue({ ok: false });
+    it("passes user subject to categoriesToSearch", async () => {
+        mockSearchDuckDuckGo.mockResolvedValue([]);
+        mockCategoriesToSearch.mockReturnValue(["general", "science"]);
 
         const state = {
-            messages: [new HumanMessage("test query")],
+            messages: [new HumanMessage("test")],
+            userContext: { subject: "Physics" },
+            requiresHeavyReasoning: false,
+            retrievedContext: "",
+            webSearchContext: "",
+            reasoningResult: "",
+            searchCount: 0,
+        };
+
+        await webSearchNode(state);
+        expect(mockCategoriesToSearch).toHaveBeenCalledWith("Physics");
+    });
+
+    it("increments searchCount on successful search", async () => {
+        mockSearchDuckDuckGo.mockResolvedValue([]);
+
+        const state = {
+            messages: [new HumanMessage("test")],
             userContext: {},
             requiresHeavyReasoning: false,
             retrievedContext: "",
             webSearchContext: "",
             reasoningResult: "",
+            searchCount: 3,
         };
 
         const result = await webSearchNode(state);
-        expect(result.webSearchContext).toContain("Web search failed");
-
-        (serverEnv as { SEARXNG_URL?: string }).SEARXNG_URL = originalUrl;
+        expect(result.searchCount).toBe(4);
     });
 
-    it("handles empty search results", async () => {
-        const originalUrl = (serverEnv as { SEARXNG_URL?: string }).SEARXNG_URL;
-        (serverEnv as { SEARXNG_URL?: string }).SEARXNG_URL =
-            "http://localhost:8080";
-
-        global.fetch = vi.fn().mockResolvedValue({
-            ok: true,
-            json: async () => ({ results: [] }),
-        });
+    it("defaults searchCount to 0 when undefined", async () => {
+        mockSearchDuckDuckGo.mockResolvedValue([]);
 
         const state = {
-            messages: [new HumanMessage("obscure query")],
+            messages: [new HumanMessage("test")],
             userContext: {},
             requiresHeavyReasoning: false,
             retrievedContext: "",
             webSearchContext: "",
             reasoningResult: "",
+            searchCount: undefined as unknown as number,
         };
 
         const result = await webSearchNode(state);
-        expect(result.webSearchContext).toContain("No results found");
+        expect(result.searchCount).toBe(1);
+    });
 
-        (serverEnv as { SEARXNG_URL?: string }).SEARXNG_URL = originalUrl;
+    it("calls validateSearchConfig with SEARXNG_URL", async () => {
+        mockSearchDuckDuckGo.mockResolvedValue([]);
+
+        const state = {
+            messages: [new HumanMessage("test")],
+            userContext: {},
+            requiresHeavyReasoning: false,
+            retrievedContext: "",
+            webSearchContext: "",
+            reasoningResult: "",
+            searchCount: 0,
+        };
+
+        await webSearchNode(state);
+        expect(mockValidateSearchConfig).toHaveBeenCalled();
     });
 });
 
