@@ -15,10 +15,25 @@ export const AgentState = Annotation.Root({
         reducer: (x, y) => ({ ...x, ...y }),
         default: () => ({}),
     }),
-    // Represents whether the question needs deep technical reasoning 
+    // Represents whether the question needs deep technical reasoning
     requiresHeavyReasoning: Annotation<boolean>({
         reducer: (x, y) => y, // Always take the latest value
         default: () => false,
+    }),
+    // Metadata about routing decisions for analytics
+    routingMetadata: Annotation<{
+        intent: string;
+        confidence: number;
+        timestamp: string;
+        routingReason: string;
+    }>({
+        reducer: (x, y) => y, // Always take the latest value
+        default: () => ({
+            intent: "unknown",
+            confidence: 0,
+            timestamp: new Date().toISOString(),
+            routingReason: "Not routed yet"
+        }),
     }),
     // Result of textbook retrieval
     retrievedContext: Annotation<string>({

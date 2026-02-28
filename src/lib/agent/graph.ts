@@ -14,6 +14,17 @@ export function decideNextNode(state: typeof AgentState.State) {
         return "heavy_reasoning";
     } else if (content.includes("Web search required")) {
         return "web_search";
+    } else if (content.includes("Greeting detected")) {
+        // For greetings, skip to synthesis directly
+        return "synthesis";
+    } else if (content.includes("Follow-up question detected")) {
+        // For follow-ups, we might want to reuse previous context
+        // For now, default to textbook retrieval but could be enhanced
+        return "textbook_retrieval";
+    } else if (content.includes("Off-topic detected")) {
+        // For off-topic, we might want to handle differently
+        // For now, default to textbook retrieval but could be enhanced
+        return "textbook_retrieval";
     } else {
         return "textbook_retrieval";
     }

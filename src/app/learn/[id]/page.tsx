@@ -4,6 +4,7 @@ import { use, useState } from "react";
 import { ArrowLeft, Send, Sparkles, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import MarkdownRenderer from "@/components/ui/markdown-renderer";
 
 export default function LearnInteractivePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -137,7 +138,11 @@ export default function LearnInteractivePage({ params }: { params: Promise<{ id:
                                 ? 'bg-foreground text-white rounded-tr-sm shadow-md'
                                 : 'bg-white border border-border shadow-sm rounded-tl-sm text-foreground'
                                 }`}>
-                                <p className="text-sm leading-relaxed">{msg.text}</p>
+                                {msg.role === "assistant" ? (
+                                    <MarkdownRenderer content={msg.text} />
+                                ) : (
+                                    <p className="text-sm leading-relaxed">{msg.text}</p>
+                                )}
                             </div>
                         </motion.div>
                     ))}
