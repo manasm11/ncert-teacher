@@ -143,6 +143,23 @@ describe("AgentState", () => {
         });
     });
 
+    describe("searchCount annotation", () => {
+        it("has a default value of 0", () => {
+            const spec = AgentState.spec;
+            const defaultVal = spec.searchCount.initialValueFactory();
+
+            expect(defaultVal).toBe(0);
+        });
+
+        it("always takes the latest value via reducer", () => {
+            const spec = AgentState.spec;
+
+            expect(spec.searchCount.operator(0, 1)).toBe(1);
+            expect(spec.searchCount.operator(3, 5)).toBe(5);
+            expect(spec.searchCount.operator(5, 0)).toBe(0);
+        });
+    });
+
     describe("routingMetadata annotation", () => {
         it("has a default value with unknown intent", () => {
             const spec = AgentState.spec;
