@@ -3,16 +3,18 @@
 ----------------------------------------------------------------------
 -- Subjects
 ----------------------------------------------------------------------
-insert into public.subjects (name, slug, icon, description, grade_range_start, grade_range_end) values
-  ('Mathematics',     'mathematics',     '📐', 'NCERT Mathematics curriculum covering arithmetic, algebra, geometry, and more.', 1, 12),
-  ('Science',         'science',         '🔬', 'NCERT Science curriculum covering physics, chemistry, and biology.',            1, 10),
-  ('Physics',         'physics',         '⚛️', 'NCERT Physics for senior secondary students.',                                 11, 12),
-  ('Chemistry',       'chemistry',       '🧪', 'NCERT Chemistry for senior secondary students.',                               11, 12),
-  ('Biology',         'biology',         '🧬', 'NCERT Biology for senior secondary students.',                                 11, 12),
-  ('English',         'english',         '📖', 'NCERT English language and literature.',                                       1, 12),
-  ('Hindi',           'hindi',           '📝', 'NCERT Hindi language and literature.',                                         1, 12),
-  ('Social Science',  'social-science',  '🌍', 'History, Geography, Civics, and Economics.',                                   6, 10),
-  ('Computer Science','computer-science','💻', 'NCERT Computer Science and Informatics Practices.',                            11, 12);
+-- Update existing subjects to use new schema
+update public.subjects set
+  grade_start = case when grade_range_start >= 6 then 6 else grade_range_start end,
+  grade_end = case when grade_range_end <= 12 then 12 else grade_range_end end
+where grade_range_start is not null;
+
+insert into public.subjects (name, slug, icon, description, grade_start, grade_end) values
+  ('Science',         'science',         'BookOpen', 'NCERT Science curriculum covering physics, chemistry, and biology.', 6, 10),
+  ('Mathematics',     'mathematics',     'Calculator', 'NCERT Mathematics curriculum covering arithmetic, algebra, geometry, and more.', 6, 12),
+  ('Social Science',  'social-science',  'Map', 'History, Geography, Civics, and Economics.', 6, 10),
+  ('English',         'english',         'BookOpen', 'NCERT English language and literature.', 6, 12),
+  ('Hindi',           'hindi',           'BookOpen', 'NCERT Hindi language and literature.', 6, 12);
 
 ----------------------------------------------------------------------
 -- Sample Chapters — Class 10 Mathematics

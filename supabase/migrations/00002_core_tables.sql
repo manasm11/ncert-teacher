@@ -39,10 +39,17 @@ create table public.subjects (
   slug text not null unique,
   icon text,
   description text,
-  grade_range_start int not null default 1,
-  grade_range_end int not null default 12,
-  created_at timestamptz not null default now()
+  grade_start int not null default 1,
+  grade_end int not null default 12,
+  created_by uuid references auth.users (id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
+
+-- Auto-update updated_at on subjects
+create trigger subjects_updated_at
+  before update on public.subjects
+  for each row execute function extensions.moddatetime(updated_at);
 
 -- Chapters
 create table public.chapters (
