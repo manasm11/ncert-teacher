@@ -301,7 +301,7 @@ export const AGE_GROUP_CONFIGS: Record<string, AgeGroupConfig> = {
  */
 export function checkContentSafety(
     content: string,
-    ageGroup: "primary" | "middle" | "high" = "general",
+    ageGroup: "primary" | "middle" | "high" | "general" = "general",
 ): {
     isSafe: boolean;
     violations: Array<{
@@ -339,7 +339,7 @@ export function checkContentSafety(
  */
 export function isAgeAppropriate(
     content: string,
-    ageGroup: "primary" | "middle" | "high",
+    ageGroup: "primary" | "middle" | "high" | "general",
 ): boolean {
     const config = AGE_GROUP_CONFIGS[ageGroup];
 
