@@ -1,26 +1,155 @@
 "use client";
 
-import { use, useState } from "react";
-import { ArrowLeft, Send, Sparkles, BookOpen } from "lucide-react";
+import { use, useEffect, useState } from "react";
+import { ArrowLeft, Send, Sparkles, BookOpen, Menu, X, Plus, Clock, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import MarkdownRenderer from "@/components/ui/markdown-renderer";
+import { useUser } from "@/lib/auth/hooks";
+
+interface Message {
+    role: "user" | "assistant" | "system";
+    text: string;
+    id?: string;
+    createdAt?: string;
+}
+
+interface Conversation {
+    id: string;
+    title: string;
+    chapterId: string | null;
+    createdAt: string;
+    updatedAt: string;
+    messageCount: number;
+}
 
 export default function LearnInteractivePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
-    // Placeholder state for the chat
-    const [messages, setMessages] = useState([
-        { role: "assistant", text: "Hello there! I'm Gyanu 🐘. Ready to dive into today's chapter? Ask me anything when you get stuck!" }
-    ]);
+    const { user, loading: userLoading } = useUser();
+
+    // Conversation state
+    const [conversationId, setConversationId] = useState<string | null>(null);
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [conversations, setConversations] = useState<Conversation[]>([]);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
+    // Load conversations on mount
+    useEffect(() => {
+        if (!userLoading && user) {
+            loadConversations();
+        }
+    }, [user, userLoading]);
+
+    // Load messages for a conversation
+    useEffect(() => {
+        if (conversationId) {
+            loadConversationHistory(conversationId);
+        } else {
+            // New conversation - set initial greeting
+            if (messages.length === 0) {
+                setMessages([
+                    { role: "assistant", text: "Hello there! I'm Gyanu 🐘. Ready to dive into today's chapter? Ask me anything when you get stuck!" }
+                ]);
+            }
+        }
+    }, [conversationId]);
+
+    // Load conversations list
+    const loadConversations = async () => {
+        if (!user) return;
+
+        try {
+            const response = await fetch(`/api/conversations?chapterId=${id}`);
+            if (response.ok) {
+                const data = await response.json();
+                setConversations(data.conversations || []);
+            }
+        } catch (error) {
+            console.error("Failed to load conversations:", error);
+        }
+    };
+
+    // Load conversation history
+    const loadConversationHistory = async (convId: string) => {
+        try {
+            const response = await fetch(`/api/conversations/${convId}`);
+            if (response.ok) {
+                const data = await response.json();
+                const historyMessages = data.messages.map((msg: any) => ({
+                    role: msg.role,
+                    text: msg.content,
+                    id: msg.id,
+                    createdAt: msg.createdAt,
+                }));
+                setMessages(historyMessages);
+            }
+        } catch (error) {
+            console.error("Failed to load conversation history:", error);
+        }
+    };
+
+    // Create new conversation
+    const handleNewConversation = async () => {
+        try {
+            const response = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    messages: [{ role: "user", text: "Hello Gyanu!" }],
+                    userContext: { classGrade: "6", subject: "Science", chapter: id, userId: user?.id },
+                    conversationId: null,
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setConversationId(data.conversationId);
+                setMessages([
+                    { role: "assistant", text: data.text },
+                ]);
+                loadConversations();
+            }
+        } catch (error) {
+            console.error("Failed to create new conversation:", error);
+        }
+    };
+
+    // Switch to existing conversation
+    const handleSelectConversation = async (convId: string) => {
+        setConversationId(convId);
+        setSidebarOpen(false);
+        loadConversationHistory(convId);
+    };
+
+    // Delete conversation
+    const handleDeleteConversation = async (convId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (window.confirm("Are you sure you want to delete this conversation?")) {
+            try {
+                await fetch(`/api/conversations/${convId}`, { method: "DELETE" });
+                loadConversations();
+                if (conversationId === convId) {
+                    setConversationId(null);
+                    setMessages([
+                        { role: "assistant", text: "Hello there! I'm Gyanu 🐘. Ready to dive into today's chapter? Ask me anything when you get stuck!" }
+                    ]);
+                }
+            } catch (error) {
+                console.error("Failed to delete conversation:", error);
+            }
+        }
+    };
+
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!input.trim() || isLoading) return;
+        if (!input.trim() || isLoading || !user) return;
 
-        // Add user message
-        const userMessage = { role: "user", text: input };
+        const userMessageText = input;
+        const userMessage: Message = { role: "user", text: userMessageText };
+
+        // Optimistically add user message
         const newMessages = [...messages, userMessage];
         setMessages(newMessages);
         setInput("");
@@ -32,14 +161,16 @@ export default function LearnInteractivePage({ params }: { params: Promise<{ id:
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     messages: newMessages,
-                    userContext: { classGrade: "6", subject: "Science", chapter: id }
+                    userContext: { classGrade: "6", subject: "Science", chapter: id, userId: user.id },
+                    conversationId: conversationId || undefined,
                 })
             });
 
             if (!response.ok) throw new Error("Network response was not ok");
 
             const data = await response.json();
-            setMessages(prev => [...prev, { role: "assistant", text: data.text }]);
+            setConversationId(data.conversationId);
+            setMessages(prev => [...prev, { role: "assistant", text: data.text, id: data.id }]);
         } catch (error) {
             console.error(error);
             setMessages(prev => [...prev, { role: "assistant", text: "Oops! My connection to the forest map seems unstable right now! 🐘🌿" }]);
@@ -48,14 +179,82 @@ export default function LearnInteractivePage({ params }: { params: Promise<{ id:
         }
     };
 
+    // Auto-generate title from first user message
+    const getAutoTitle = (messages: Message[]): string => {
+        const firstUserMsg = messages.find(m => m.role === "user");
+        if (firstUserMsg) {
+            const preview = firstUserMsg.text.length > 30
+                ? firstUserMsg.text.slice(0, 30) + "..."
+                : firstUserMsg.text;
+            return preview || "New Conversation";
+        }
+        return "New Conversation";
+    };
+
+    // Get conversation title
+    const getConversationTitle = (conv: Conversation | null): string => {
+        if (conv) return conv.title;
+        if (messages.length > 0) {
+            return getAutoTitle(messages);
+        }
+        return "New Conversation";
+    };
+
+    const currentConversation = conversations.find(c => c.id === conversationId) || null;
+
     return (
         <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row bg-background overflow-hidden relative">
 
-            {/* Top Mobile Bar (only visible on small screens to go back) */}
-            <div className="md:hidden flex items-center p-4 bg-white border-b z-10 w-full shrink-0">
-                <Link href="/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
-                    <ArrowLeft className="w-5 h-5" /> Back to Map
-                </Link>
+            {/* Mobile Sidebar Toggle */}
+            <div className="md:hidden fixed top-16 left-0 right-0 h-12 flex items-center px-4 bg-white border-b z-30">
+                <button
+                    onClick={() => setSidebarOpen(true)}
+                    className="p-2 rounded-lg hover:bg-muted text-muted-foreground"
+                >
+                    <Menu className="w-5 h-5" />
+                </button>
+                <div className="ml-4 flex-1 overflow-hidden">
+                    <div className="text-sm font-medium text-foreground truncate">
+                        {getConversationTitle(currentConversation)}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">
+                        {currentConversation ? `${currentConversation.messageCount} messages` : "Chapter " + id}
+                    </div>
+                </div>
+            </div>
+
+            {/* Sidebar Drawer (Mobile) */}
+            <div className={`fixed inset-0 z-50 md:hidden ${sidebarOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+                <div
+                    className={`absolute inset-0 bg-black/50 transition-opacity ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}
+                    onClick={() => setSidebarOpen(false)}
+                />
+                <motion.div
+                    initial={{ x: "-100%" }}
+                    animate={{ x: sidebarOpen ? "0%" : "-100%" }}
+                    transition={{ type: "spring", damping: 25 }}
+                    className="absolute left-0 top-0 bottom-0 w-80 bg-white shadow-xl"
+                >
+                    <SidebarContent
+                        conversations={conversations}
+                        currentConversationId={conversationId}
+                        onSelectConversation={handleSelectConversation}
+                        onDeleteConversation={handleDeleteConversation}
+                        onNewConversation={handleNewConversation}
+                        onClose={() => setSidebarOpen(false)}
+                    />
+                </motion.div>
+            </div>
+
+            {/* Desktop Sidebar */}
+            <div className="hidden md:flex w-64 h-full flex-col bg-white border-r border-border z-20">
+                <SidebarContent
+                    conversations={conversations}
+                    currentConversationId={conversationId}
+                    onSelectConversation={handleSelectConversation}
+                    onDeleteConversation={handleDeleteConversation}
+                    onNewConversation={handleNewConversation}
+                />
             </div>
 
             {/* LEFT PANEL: Textbook Content Area */}
@@ -113,15 +312,31 @@ export default function LearnInteractivePage({ params }: { params: Promise<{ id:
 
                 {/* Chat Header */}
                 <div className="h-16 border-b flex items-center px-6 bg-white shrink-0 shadow-sm relative z-10">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-1">
                         <div className="relative">
                             <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-xl shadow-inner">🐘</div>
                             <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
                         </div>
-                        <div>
-                            <h2 className="font-bold font-outfit text-foreground leading-none">Gyanu Tutor</h2>
-                            <span className="text-xs text-primary font-medium">Online & Ready to Help</span>
+                        <div className="flex-1 min-w-0">
+                            <h2 className="font-bold font-outfit text-foreground leading-none truncate">
+                                {getConversationTitle(currentConversation)}
+                            </h2>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs text-primary font-medium">Online & Ready to Help</span>
+                                {currentConversation && (
+                                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                        <MessageSquare className="w-3 h-3" />
+                                        {currentConversation.messageCount} messages
+                                    </span>
+                                )}
+                            </div>
                         </div>
+                        <button
+                            onClick={() => setSidebarOpen(true)}
+                            className="md:hidden p-2 text-muted-foreground hover:text-foreground"
+                        >
+                            <Menu className="w-5 h-5" />
+                        </button>
                     </div>
                 </div>
 
@@ -167,7 +382,8 @@ export default function LearnInteractivePage({ params }: { params: Promise<{ id:
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Ask Gyanu a question..."
-                            className="w-full pl-5 pr-14 py-4 rounded-full bg-muted/30 border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all text-sm shadow-inner text-foreground placeholder-muted-foreground"
+                            disabled={!user && !isLoading}
+                            className="w-full pl-5 pr-14 py-4 rounded-full bg-muted/30 border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all text-sm shadow-inner text-foreground placeholder-muted-foreground disabled:opacity-50"
                         />
                         <button
                             type="submit"
@@ -185,5 +401,110 @@ export default function LearnInteractivePage({ params }: { params: Promise<{ id:
             </div>
 
         </div>
+    );
+}
+
+// Sidebar component shared between mobile drawer and desktop
+function SidebarContent({
+    conversations,
+    currentConversationId,
+    onSelectConversation,
+    onDeleteConversation,
+    onNewConversation,
+    onClose,
+}: {
+    conversations: Conversation[];
+    currentConversationId: string | null;
+    onSelectConversation: (id: string) => void;
+    onDeleteConversation: (id: string, e: React.MouseEvent) => void;
+    onNewConversation: () => void;
+    onClose?: () => void;
+}) {
+    return (
+        <>
+            {/* Sidebar Header */}
+            <div className="p-4 border-b flex items-center justify-between bg-white shrink-0">
+                <div>
+                    <h2 className="font-bold font-outfit text-foreground">Chats</h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                        {conversations.length} {conversations.length === 1 ? 'conversation' : 'conversations'}
+                    </p>
+                </div>
+                <button
+                    onClick={onClose}
+                    className="md:hidden p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted"
+                >
+                    <X className="w-5 h-5" />
+                </button>
+            </div>
+
+            {/* New Chat Button */}
+            <div className="p-4 shrink-0">
+                <button
+                    onClick={onNewConversation}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-all font-medium text-sm"
+                >
+                    <Plus className="w-4 h-4" />
+                    <span>New Chat</span>
+                </button>
+            </div>
+
+            {/* Conversation List */}
+            <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-1">
+                {conversations.length === 0 ? (
+                    <div className="px-4 py-8 text-center">
+                        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-muted/50 flex items-center justify-center text-muted-foreground">
+                            <MessageSquare className="w-6 h-6" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">No conversations yet</p>
+                        <p className="text-xs text-muted-foreground mt-1">Start a new chat to begin!</p>
+                    </div>
+                ) : (
+                    conversations.map((conv) => (
+                        <button
+                            key={conv.id}
+                            onClick={() => onSelectConversation(conv.id)}
+                            className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all text-left group ${
+                                currentConversationId === conv.id
+                                    ? 'bg-primary/10 text-primary'
+                                    : 'hover:bg-muted/50 text-foreground'
+                            }`}
+                        >
+                            <div className={`flex-1 min-w-0`}>
+                                <div className="flex items-center justify-between mb-0.5">
+                                    <span className={`text-sm font-medium truncate ${currentConversationId === conv.id ? 'text-primary' : ''}`}>
+                                        {conv.title}
+                                    </span>
+                                    {conv.messageCount > 0 && (
+                                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                            currentConversationId === conv.id ? 'bg-primary/20' : 'bg-muted'
+                                        }`}>
+                                            {conv.messageCount}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <Clock className="w-3 h-3" />
+                                    <span>{new Date(conv.updatedAt).toLocaleDateString()}</span>
+                                    {conv.chapterId && (
+                                        <>
+                                            <span>•</span>
+                                            <span>Chapter {conv.chapterId}</span>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                            <button
+                                onClick={(e) => onDeleteConversation(conv.id, e)}
+                                className={`p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100`}
+                                title="Delete conversation"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </button>
+                    ))
+                )}
+            </div>
+        </>
     );
 }
