@@ -10,6 +10,7 @@ create table if not exists public.chapter_chunks (
     chapter text not null,
     heading_hierarchy text[] not null default '{}',
     embedding extensions.vector(768) not null,
+    source_id uuid references public.pdf_uploads (id) on delete cascade,
     created_at timestamptz not null default now()
 );
 
@@ -23,15 +24,17 @@ create index if not exists chapter_chunks_embedding_idx
 create index if not exists chapter_chunks_subject_idx on public.chapter_chunks (subject);
 create index if not exists chapter_chunks_grade_idx on public.chapter_chunks (grade);
 create index if not exists chapter_chunks_chapter_idx on public.chapter_chunks (chapter);
+create index if not exists chapter_chunks_source_id_idx on public.chapter_chunks (source_id);
 
 -- RPC function: match_chapter_chunks
--- Performs vector similarity search with optional filtering by subject, grade, chapter.
+-- Performs vector similarity search with optional filtering by subject, grade, chapter, source_id.
 create or replace function public.match_chapter_chunks(
     query_embedding extensions.vector(768),
     match_count int default 5,
     filter_subject text default null,
     filter_grade text default null,
-    filter_chapter text default null
+    filter_chapter text default null,
+    filter_source_id uuid default null
 )
 returns table (
     id uuid,
@@ -40,7 +43,8 @@ returns table (
     grade text,
     chapter text,
     heading_hierarchy text[],
-    similarity float
+    similarity float,
+    source_id uuid
 )
 language plpgsql
 as $$
@@ -53,12 +57,14 @@ begin
         cc.grade,
         cc.chapter,
         cc.heading_hierarchy,
-        1 - (cc.embedding <=> query_embedding) as similarity
+        1 - (cc.embedding <=> query_embedding) as similarity,
+        cc.source_id
     from public.chapter_chunks cc
     where
         (filter_subject is null or cc.subject = filter_subject)
         and (filter_grade is null or cc.grade = filter_grade)
         and (filter_chapter is null or cc.chapter = filter_chapter)
+        and (filter_source_id is null or cc.source_id = filter_source_id)
     order by cc.embedding <=> query_embedding
     limit match_count;
 end;
