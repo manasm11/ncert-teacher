@@ -55,7 +55,8 @@ export interface InputWithLabelProps extends InputProps {
 
 const InputWithLabel = React.forwardRef<HTMLInputElement, InputWithLabelProps>(
     ({ className, variant, label, error, helperText, required, id, type = "text", ...props }, ref) => {
-        const inputId = id || `input-${Math.random().toString(36).substring(7)}`;
+        const generatedId = React.useId();
+        const inputId = id || generatedId;
         const hasError = !!error;
 
         return (

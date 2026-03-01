@@ -27,10 +27,6 @@ export default function TeacherDashboard() {
     const [activities, setActivities] = useState<RecentActivity[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchDashboardData();
-    }, []);
-
     const fetchDashboardData = async () => {
         const supabase = createClient();
         setLoading(true);
@@ -99,6 +95,10 @@ export default function TeacherDashboard() {
 
         setLoading(false);
     };
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, []);
 
     if (loading) {
         return (
