@@ -11,20 +11,21 @@ import {
 // Mock Radix UI primitives
 vi.mock("@radix-ui/react-avatar", async () => {
   const actual = await vi.importActual("@radix-ui/react-avatar");
+  type MockProps = Record<string, unknown>;
   return {
     ...actual,
     Root: Object.assign(
-      (props: any) => <div data-testid="mock-avatar-root" {...props} />,
+      (props: MockProps) => <div data-testid="mock-avatar-root" {...props} />,
       { displayName: "Root" }
     ),
     Image: Object.assign(
-      (props: any) => <img data-testid="mock-avatar-image" {...props} />,
+      (props: MockProps) => <img data-testid="mock-avatar-image" alt={props.alt as string || ""} {...props} />,
       { displayName: "Image" }
     ),
     Fallback: Object.assign(
-      (props: any) => (
+      (props: MockProps) => (
         <div data-testid="mock-avatar-fallback" {...props}>
-          {props.text || props.children}
+          {(props.text as string) || (props.children as string)}
         </div>
       ),
       { displayName: "Fallback" }

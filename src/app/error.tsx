@@ -41,7 +41,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, reset }) => {
           <div className="space-y-2">
             <CardTitle className="text-2xl font-outfit">Oops! Gyanu tripped over a root</CardTitle>
             <CardDescription className="text-muted-foreground">
-              Something went wrong while loading this page. We've logged the error and will look into it.
+              Something went wrong while loading this page. We&apos;ve logged the error and will look into it.
             </CardDescription>
           </div>
         </CardHeader>
