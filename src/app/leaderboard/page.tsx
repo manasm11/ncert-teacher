@@ -98,7 +98,7 @@ export default function LeaderboardPage() {
                     Top Students
                 </h1>
                 <p className="text-muted-foreground max-w-2xl mx-auto">
-                    Compete and climb the ranks! See who's leading the pack in the Gyanu AI learning journey.
+                    Compete and climb the ranks! See who&apos;s leading the pack in the Gyanu AI learning journey.
                 </p>
             </div>
 

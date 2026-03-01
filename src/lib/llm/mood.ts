@@ -206,7 +206,7 @@ export interface CurrentMood {
 
 // Global mood state (in production, this would be per session/user)
 let currentMoodState: CurrentMood | null = null;
-let moodHistory: { mood: GyanuMood; timestamp: string; context: string }[] = [];
+const moodHistory: { mood: GyanuMood; timestamp: string; context: string }[] = [];
 
 /**
  * Set Gyanu's mood

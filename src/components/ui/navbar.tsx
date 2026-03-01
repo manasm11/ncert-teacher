@@ -291,10 +291,10 @@ function SearchButton() {
                                     <Search className="w-6 h-6 text-muted-foreground" />
                                 </div>
                                 <p className="text-muted-foreground text-sm">
-                                    No results found for "{query}"
+                                    No results found for &quot;{query}&quot;
                                 </p>
                                 <Link
-                                    href="/search?q=" + encodeURIComponent(query)
+                                    href={`/search?q=${encodeURIComponent(query)}`}
                                     className="mt-3 inline-block text-primary text-sm font-medium hover:underline"
                                 >
                                     View all results
@@ -331,7 +331,7 @@ function SearchButton() {
                     {hasSearched && results.length > 0 && (
                         <div className="p-3 bg-muted/30 border-t border-border text-center">
                             <Link
-                                href="/search?q=" + encodeURIComponent(query)
+                                href={`/search?q=${encodeURIComponent(query)}`}
                                 className="text-xs text-muted-foreground hover:text-foreground hover:underline"
                             >
                                 View all results
@@ -423,7 +423,7 @@ function SearchButtonMobile() {
                                     <Search className="w-8 h-8 text-muted-foreground" />
                                 </div>
                                 <p className="text-muted-foreground">
-                                    No results found for "{query}"
+                                    No results found for &quot;{query}&quot;
                                 </p>
                             </div>
                         ) : (

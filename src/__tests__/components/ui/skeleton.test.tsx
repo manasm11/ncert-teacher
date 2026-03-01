@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect } from "vitest";
+import { render } from "@testing-library/react";
 import {
   Skeleton,
   TextSkeleton,
@@ -7,13 +7,6 @@ import {
   ListSkeleton,
   AvatarSkeleton,
 } from "@/components/ui/skeleton";
-
-// Add a visible marker for skeleton elements to query
-const SkeletonWithText = ({ children, ...props }: any) => (
-  <div className="skeleton-wrapper" {...props}>
-    {children}
-  </div>
-);
 
 describe("Skeleton", () => {
   describe("Variants", () => {

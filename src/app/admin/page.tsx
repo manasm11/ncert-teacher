@@ -17,6 +17,7 @@ import {
     CheckCircle2,
     Clock,
     AlertCircle,
+    Shield,
 } from "lucide-react";
 import { StatCard } from "@/components/admin/StatCard";
 import { Button } from "@/components/ui/button";
@@ -115,7 +116,7 @@ export default function AdminDashboard() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold font-outfit text-foreground">Admin Dashboard</h1>
-                    <p className="text-muted-foreground mt-1">Welcome back, Administrator! Here's what's happening today.</p>
+                    <p className="text-muted-foreground mt-1">Welcome back, Administrator! Here&apos;s what&apos;s happening today.</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <span className="flex h-3 w-3">

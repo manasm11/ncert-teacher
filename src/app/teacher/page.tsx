@@ -27,13 +27,8 @@ export default function TeacherDashboard() {
     const [activities, setActivities] = useState<RecentActivity[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchDashboardData();
-    }, []);
-
     const fetchDashboardData = async () => {
         const supabase = createClient();
-        setLoading(true);
 
         // Get total students
         const { count: studentCount } = await supabase
@@ -100,6 +95,11 @@ export default function TeacherDashboard() {
         setLoading(false);
     };
 
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- async data fetching sets state after await
+        fetchDashboardData();
+    }, []);
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -116,7 +116,7 @@ export default function TeacherDashboard() {
                         Teacher Dashboard
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        Track your students' progress and manage your classroom.
+                        Track your students&apos; progress and manage your classroom.
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -233,7 +233,7 @@ export default function TeacherDashboard() {
                                                 {activity.studentName} {activity.action}
                                             </div>
                                             <div className="text-xs text-muted-foreground">
-                                                "{activity.chapter}"
+                                                &quot;{activity.chapter}&quot;
                                             </div>
                                         </div>
                                         <div className="text-xs text-muted-foreground">

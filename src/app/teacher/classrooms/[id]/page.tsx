@@ -39,13 +39,8 @@ export default function ClassroomDetailPage() {
     const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchClassroomData();
-    }, [classId]);
-
     const fetchClassroomData = async () => {
         const supabase = createClient();
-        setLoading(true);
 
         // Mock data since we don't have actual tables
         const mockClassroom: ClassroomDetail = {
@@ -114,6 +109,11 @@ export default function ClassroomDetailPage() {
         setStudents(mockStudents);
         setLoading(false);
     };
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- async data fetching sets state after await
+        fetchClassroomData();
+    }, [classId]);
 
     const stats = {
         totalStudents: students.length,

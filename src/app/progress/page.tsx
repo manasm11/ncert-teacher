@@ -50,13 +50,8 @@ export default function ProgressReportPage() {
     const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchProgressData();
-    }, []);
-
     const fetchProgressData = async () => {
         const supabase = createClient();
-        setLoading(true);
 
         // Get user profile
         const { data: { user } } = await supabase.auth.getUser();
@@ -112,6 +107,11 @@ export default function ProgressReportPage() {
         setRecentActivity(mockActivity);
         setLoading(false);
     };
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- async data fetching sets state after await
+        fetchProgressData();
+    }, []);
 
     if (loading) {
         return (

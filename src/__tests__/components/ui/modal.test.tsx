@@ -3,7 +3,6 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import {
   Modal,
   ModalTrigger,
-  ModalClose,
   ModalContent,
   ModalHeader,
   ModalTitle,
@@ -284,7 +283,7 @@ describe("Modal", () => {
     // from Radix includes animations in the base. The actual component uses cva which
     // properly filters these when animated=false.
     it("renders without animation when animated is false (manual check)", () => {
-      const { container } = render(
+      render(
         <Modal>
           <ModalTrigger asChild>
             <button>Open</button>

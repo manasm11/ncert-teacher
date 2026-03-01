@@ -72,7 +72,7 @@ export default function PdfIngestionStatusPage({ params }: { params: Promise<{ i
             <div className="max-w-4xl mx-auto px-6 py-12 flex flex-col items-center justify-center min-h-[60vh]">
                 <AlertCircle className="w-16 h-16 text-destructive mb-4" />
                 <h2 className="text-2xl font-bold font-outfit mb-2">Ingestion Not Found</h2>
-                <p className="text-muted-foreground mb-8">The PDF ingestion you're looking for doesn't exist.</p>
+                <p className="text-muted-foreground mb-8">The PDF ingestion you&apos;re looking for doesn&apos;t exist.</p>
                 <Button asChild>
                     <Link href="/admin/pdfs">Back to Upload Page</Link>
                 </Button>

@@ -205,7 +205,8 @@ export async function* generateEmbeddingsStreaming(
                 })
             );
 
-            batchEmbeddings.forEach((embedding, idx) => {
+            for (let idx = 0; idx < batchEmbeddings.length; idx++) {
+                const embedding = batchEmbeddings[idx];
                 embeddings.push(embedding);
                 const chunkWithEmbedding: ChunkWithEmbedding = {
                     content: batch[idx].content,
@@ -213,8 +214,8 @@ export async function* generateEmbeddingsStreaming(
                     embedding,
                 };
                 resultChunks.push(chunkWithEmbedding);
-                yield { type: "chunk", chunk: chunkWithEmbedding };
-            });
+                yield { type: "chunk" as const, chunk: chunkWithEmbedding };
+            }
 
             successful += batch.length;
         } catch (error) {

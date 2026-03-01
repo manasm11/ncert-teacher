@@ -24,13 +24,8 @@ export default function ClassroomListPage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
 
-    useEffect(() => {
-        fetchClassrooms();
-    }, []);
-
     const fetchClassrooms = async () => {
         const supabase = createClient();
-        setLoading(true);
 
         // For now, return mock data since we don't have a classrooms table
         // In production, this would fetch from a classrooms table
@@ -67,6 +62,11 @@ export default function ClassroomListPage() {
         setClassrooms(mockClassrooms);
         setLoading(false);
     };
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- async data fetching sets state after await
+        fetchClassrooms();
+    }, []);
 
     const filteredClassrooms = classrooms.filter((c) =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -43,12 +43,19 @@ export default function QuizPage() {
 
     useEffect(() => {
         // Generate a demo quiz for now
-        const quiz = generateDemoQuiz(chapterId, "Chapter Title", 6, "Science");
-        setState((prev) => ({
-            ...prev,
-            status: "ready",
-            quiz,
-        }));
+        let cancelled = false;
+        const loadQuiz = async () => {
+            const quiz = generateDemoQuiz(chapterId, "Chapter Title", 6, "Science");
+            if (!cancelled) {
+                setState((prev) => ({
+                    ...prev,
+                    status: "ready",
+                    quiz,
+                }));
+            }
+        };
+        loadQuiz();
+        return () => { cancelled = true; };
     }, [chapterId]);
 
     const currentQuestion = state.quiz?.questions[state.currentQuestionIndex];

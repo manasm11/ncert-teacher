@@ -16,7 +16,7 @@ import {
     Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sidebar, SidebarContent, SidebarItem, SidebarGroup, SidebarFooter } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarItem, SidebarGroup, SidebarFooter, SidebarHeader, SidebarSeparator } from "@/components/ui/sidebar";
 import { createClient } from "@/utils/supabase/client";
 import { ROLES, hasRole, type Role } from "@/lib/auth/roles";
 
