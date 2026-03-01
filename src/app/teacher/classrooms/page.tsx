@@ -24,10 +24,6 @@ export default function ClassroomListPage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
 
-    useEffect(() => {
-        fetchClassrooms();
-    }, []);
-
     const fetchClassrooms = async () => {
         const supabase = createClient();
         setLoading(true);
@@ -67,6 +63,10 @@ export default function ClassroomListPage() {
         setClassrooms(mockClassrooms);
         setLoading(false);
     };
+
+    useEffect(() => {
+        fetchClassrooms();
+    }, []);
 
     const filteredClassrooms = classrooms.filter((c) =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
