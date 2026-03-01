@@ -7,7 +7,7 @@ export type SSEventType = "status" | "token" | "done" | "error" | string;
 
 export interface SSEvent {
     type: SSEventType;
-    data: any;
+    data: Record<string, unknown>;
     retry?: number;
 }
 

@@ -12,7 +12,7 @@ async function* streamGraphEvents(
     inputMessage: HumanMessage,
     userContext: { classGrade?: string; subject?: string; chapter?: string }
 ): AsyncGenerator<string, void, unknown> {
-    let conversationId = generateConversationId();
+    const conversationId = generateConversationId();
 
     try {
         // Send initial status
