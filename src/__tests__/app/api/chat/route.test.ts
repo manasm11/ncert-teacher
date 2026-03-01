@@ -30,6 +30,61 @@ function makeRequest(body: unknown): NextRequest {
     });
 }
 
+/**
+ * Helper to create an async iterable that yields chunks,
+ * simulating agentGraph.stream() output.
+ */
+function createMockStream(chunks: Record<string, Record<string, unknown>>[]) {
+    return {
+        async *[Symbol.asyncIterator]() {
+            for (const chunk of chunks) {
+                yield chunk;
+            }
+        },
+    };
+}
+
+/**
+ * Helper to read the full SSE body from a streaming response.
+ */
+async function readSSEBody(res: Response): Promise<string> {
+    const reader = res.body?.getReader();
+    if (!reader) return "";
+    let result = "";
+    const decoder = new TextDecoder();
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        result += decoder.decode(value);
+    }
+    return result;
+}
+
+/**
+ * Parse SSE events from raw text into an array of { event, data } objects.
+ */
+function parseSSEEvents(raw: string): { event: string; data: Record<string, unknown> }[] {
+    const events: { event: string; data: Record<string, unknown> }[] = [];
+    const blocks = raw.split("\n\n").filter(Boolean);
+    for (const block of blocks) {
+        const lines = block.split("\n");
+        let event = "";
+        let data = "";
+        for (const line of lines) {
+            if (line.startsWith("event: ")) event = line.slice(7).trim();
+            if (line.startsWith("data: ")) data = line.slice(6).trim();
+        }
+        if (event && data) {
+            try {
+                events.push({ event, data: JSON.parse(data) });
+            } catch {
+                // skip unparseable
+            }
+        }
+    }
+    return events;
+}
+
 describe("POST /api/chat", () => {
     beforeEach(() => {
         vi.restoreAllMocks();
@@ -60,22 +115,13 @@ describe("POST /api/chat", () => {
         expect(res.status).toBe(400);
     });
 
-    it("returns successful response for valid chat request", async () => {
-        const mockInvoke = vi.fn().mockResolvedValue({
-            messages: [
-                { content: "Hello!" },
-                { content: "Router decision" },
-                {
-                    content:
-                        "Hello! I am Gyanu, your friendly elephant tutor! 🐘",
-                },
-            ],
-            requiresHeavyReasoning: false,
-            reasoningResult: "",
-        });
+    it("returns SSE stream for valid chat request", async () => {
+        const mockStream = createMockStream([
+            { synthesis: { messages: [{ content: "Hello! I am Gyanu 🐘" }] } },
+        ]);
 
         vi.mocked(createGraph).mockReturnValue({
-            invoke: mockInvoke,
+            stream: vi.fn().mockResolvedValue(mockStream),
         } as never);
 
         const req = makeRequest({
@@ -85,22 +131,28 @@ describe("POST /api/chat", () => {
 
         const res = await POST(req);
         expect(res.status).toBe(200);
+        expect(res.headers.get("Content-Type")).toBe("text/event-stream");
 
-        const data = await res.json();
-        expect(data.role).toBe("assistant");
-        expect(data.text).toContain("Gyanu");
-        expect(data.metadata).toBeDefined();
+        const body = await readSSEBody(res);
+        const events = parseSSEEvents(body);
+
+        // Should contain status events, token events, and a done event
+        const statusEvents = events.filter(e => e.event === "status");
+        const doneEvents = events.filter(e => e.event === "done");
+
+        expect(statusEvents.length).toBeGreaterThan(0);
+        expect(doneEvents.length).toBe(1);
     });
 
-    it("passes user context to the graph", async () => {
-        const mockInvoke = vi.fn().mockResolvedValue({
-            messages: [{ content: "Response" }],
-            requiresHeavyReasoning: false,
-            reasoningResult: "",
-        });
+    it("passes user context to the graph stream", async () => {
+        const mockStreamFn = vi.fn().mockResolvedValue(
+            createMockStream([
+                { synthesis: { messages: [{ content: "Response" }] } },
+            ])
+        );
 
         vi.mocked(createGraph).mockReturnValue({
-            invoke: mockInvoke,
+            stream: mockStreamFn,
         } as never);
 
         const userContext = {
@@ -113,9 +165,10 @@ describe("POST /api/chat", () => {
             userContext,
         });
 
-        await POST(req);
+        const res = await POST(req);
+        await readSSEBody(res);
 
-        expect(mockInvoke).toHaveBeenCalledWith(
+        expect(mockStreamFn).toHaveBeenCalledWith(
             expect.objectContaining({
                 userContext,
             })
@@ -123,38 +176,37 @@ describe("POST /api/chat", () => {
     });
 
     it("uses default user context when not provided", async () => {
-        const mockInvoke = vi.fn().mockResolvedValue({
-            messages: [{ content: "Response" }],
-            requiresHeavyReasoning: false,
-            reasoningResult: "",
-        });
+        const mockStreamFn = vi.fn().mockResolvedValue(
+            createMockStream([
+                { synthesis: { messages: [{ content: "Response" }] } },
+            ])
+        );
 
         vi.mocked(createGraph).mockReturnValue({
-            invoke: mockInvoke,
+            stream: mockStreamFn,
         } as never);
 
         const req = makeRequest({
             messages: [{ role: "user", text: "Hi" }],
         });
 
-        await POST(req);
+        const res = await POST(req);
+        await readSSEBody(res);
 
-        expect(mockInvoke).toHaveBeenCalledWith(
+        expect(mockStreamFn).toHaveBeenCalledWith(
             expect.objectContaining({
                 userContext: { classGrade: "6", subject: "Science" },
             })
         );
     });
 
-    it("returns metadata with routing information", async () => {
-        const mockInvoke = vi.fn().mockResolvedValue({
-            messages: [{ content: "Deep explanation" }],
-            requiresHeavyReasoning: true,
-            reasoningResult: "Step-by-step solution",
-        });
+    it("streams token events from synthesis node", async () => {
+        const mockStream = createMockStream([
+            { synthesis: { messages: [{ content: "Deep explanation here" }] } },
+        ]);
 
         vi.mocked(createGraph).mockReturnValue({
-            invoke: mockInvoke,
+            stream: vi.fn().mockResolvedValue(mockStream),
         } as never);
 
         const req = makeRequest({
@@ -162,14 +214,23 @@ describe("POST /api/chat", () => {
         });
 
         const res = await POST(req);
-        const data = await res.json();
+        const body = await readSSEBody(res);
+        const events = parseSSEEvents(body);
 
-        expect(data.metadata.routedTo).toBe("Heavy Reasoning (DeepSeek)");
+        const tokenEvents = events.filter(e => e.event === "token");
+        expect(tokenEvents.length).toBeGreaterThan(0);
+        expect((tokenEvents[0].data as { content: string }).content).toBe("Deep explanation here");
     });
 
-    it("returns 500 on graph invocation error", async () => {
+    it("returns SSE error event on graph stream error", async () => {
+        const errorStream = {
+            async *[Symbol.asyncIterator]() {
+                throw new Error("LLM timeout");
+            },
+        };
+
         vi.mocked(createGraph).mockReturnValue({
-            invoke: vi.fn().mockRejectedValue(new Error("LLM timeout")),
+            stream: vi.fn().mockResolvedValue(errorStream),
         } as never);
 
         const req = makeRequest({
@@ -177,37 +238,25 @@ describe("POST /api/chat", () => {
         });
 
         const res = await POST(req);
-        expect(res.status).toBe(500);
+        // SSE responses return 200 with error events in the stream
+        expect(res.status).toBe(200);
 
-        const data = await res.json();
-        expect(data.error).toBe("LLM timeout");
-    });
-
-    it("returns generic error message for non-Error exceptions", async () => {
-        vi.mocked(createGraph).mockReturnValue({
-            invoke: vi.fn().mockRejectedValue("something broke"),
-        } as never);
-
-        const req = makeRequest({
-            messages: [{ role: "user", text: "test" }],
-        });
-
-        const res = await POST(req);
-        expect(res.status).toBe(500);
-
-        const data = await res.json();
-        expect(data.error).toContain("Something went wrong");
+        const body = await readSSEBody(res);
+        const events = parseSSEEvents(body);
+        const errorEvents = events.filter(e => e.event === "error");
+        expect(errorEvents.length).toBeGreaterThan(0);
+        expect((errorEvents[0].data as { error: string }).error).toBe("LLM timeout");
     });
 
     it("uses the last message text from the messages array", async () => {
-        const mockInvoke = vi.fn().mockResolvedValue({
-            messages: [{ content: "Response" }],
-            requiresHeavyReasoning: false,
-            reasoningResult: "",
-        });
+        const mockStreamFn = vi.fn().mockResolvedValue(
+            createMockStream([
+                { synthesis: { messages: [{ content: "Response" }] } },
+            ])
+        );
 
         vi.mocked(createGraph).mockReturnValue({
-            invoke: mockInvoke,
+            stream: mockStreamFn,
         } as never);
 
         const req = makeRequest({
@@ -218,10 +267,11 @@ describe("POST /api/chat", () => {
             ],
         });
 
-        await POST(req);
+        const res = await POST(req);
+        await readSSEBody(res);
 
-        // The invoke should be called with a HumanMessage containing "Second message"
-        const invokeArgs = mockInvoke.mock.calls[0][0];
-        expect(invokeArgs.messages[0].content).toBe("Second message");
+        // The stream should be called with a HumanMessage containing "Second message"
+        const streamArgs = mockStreamFn.mock.calls[0][0];
+        expect(streamArgs.messages[0].content).toBe("Second message");
     });
 });

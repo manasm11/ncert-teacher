@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
 import {
   Toast,
   ToastViewport,
@@ -16,27 +16,27 @@ vi.mock("@radix-ui/react-toast", async () => {
   return {
     ...actual,
     Root: Object.assign(
-      (props: any) => <div data-testid="mock-toast" {...props} />,
+      (props: Record<string, unknown>) => <div data-testid="mock-toast" {...props} />,
       { displayName: "Toast" }
     ),
     Viewport: Object.assign(
-      (props: any) => <div data-testid="mock-toast-viewport" {...props} />,
+      (props: Record<string, unknown>) => <div data-testid="mock-toast-viewport" {...props} />,
       { displayName: "ToastViewport" }
     ),
     Action: Object.assign(
-      (props: any) => <button data-testid="mock-toast-action" {...props} />,
+      (props: Record<string, unknown>) => <button data-testid="mock-toast-action" {...props} />,
       { displayName: "ToastAction" }
     ),
     Close: Object.assign(
-      (props: any) => <button data-testid="mock-toast-close" {...props} />,
+      (props: Record<string, unknown>) => <button data-testid="mock-toast-close" {...props} />,
       { displayName: "ToastClose" }
     ),
     Title: Object.assign(
-      (props: any) => <h3 data-testid="mock-toast-title" {...props} />,
+      (props: Record<string, unknown>) => <h3 data-testid="mock-toast-title" {...props} />,
       { displayName: "ToastTitle" }
     ),
     Description: Object.assign(
-      (props: any) => <p data-testid="mock-toast-description" {...props} />,
+      (props: Record<string, unknown>) => <p data-testid="mock-toast-description" {...props} />,
       { displayName: "ToastDescription" }
     ),
   };
@@ -44,11 +44,11 @@ vi.mock("@radix-ui/react-toast", async () => {
 
 // Mock icons
 vi.mock("lucide-react", () => ({
-  X: (props: any) => <span data-testid="mock-x-icon" {...props}>X</span>,
-  CheckCircle: (props: any) => <span data-testid="mock-check-icon" {...props}>✓</span>,
-  AlertCircle: (props: any) => <span data-testid="mock-alert-icon" {...props}>!</span>,
-  Info: (props: any) => <span data-testid="mock-info-icon" {...props}>i</span>,
-  AlertTriangle: (props: any) => <span data-testid="mock-warning-icon" {...props}>!</span>,
+  X: (props: Record<string, unknown>) => <span data-testid="mock-x-icon" {...props}>X</span>,
+  CheckCircle: (props: Record<string, unknown>) => <span data-testid="mock-check-icon" {...props}>✓</span>,
+  AlertCircle: (props: Record<string, unknown>) => <span data-testid="mock-alert-icon" {...props}>!</span>,
+  Info: (props: Record<string, unknown>) => <span data-testid="mock-info-icon" {...props}>i</span>,
+  AlertTriangle: (props: Record<string, unknown>) => <span data-testid="mock-warning-icon" {...props}>!</span>,
 }));
 
 describe("Toast", () => {

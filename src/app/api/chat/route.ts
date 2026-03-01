@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createGraph } from "@/lib/agent/graph";
-import { HumanMessage, AIMessage } from "@langchain/core/messages";
+import { HumanMessage } from "@langchain/core/messages";
 // Generate a unique conversation ID
 function generateConversationId(): string {
     return `conv_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
@@ -12,7 +12,7 @@ async function* streamGraphEvents(
     inputMessage: HumanMessage,
     userContext: { classGrade?: string; subject?: string; chapter?: string }
 ): AsyncGenerator<string, void, unknown> {
-    let conversationId = generateConversationId();
+    const conversationId = generateConversationId();
 
     try {
         // Send initial status
@@ -24,7 +24,7 @@ async function* streamGraphEvents(
             userContext: userContext || { classGrade: "6", subject: "Science" }
         });
 
-        let finalState: any = null;
+        let finalState: Record<string, unknown> | null = null;
         let accumulatedContent = "";
 
         for await (const chunk of stream) {
@@ -69,7 +69,7 @@ async function* streamGraphEvents(
             }
 
             // Store final state for metadata
-            finalState = state;
+            finalState = chunk as Record<string, unknown>;
         }
 
         // Send done event with metadata

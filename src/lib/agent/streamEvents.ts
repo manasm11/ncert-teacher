@@ -3,8 +3,6 @@
  * Converts LangGraph stream events to SSE-friendly format with phase markers
  */
 
-import { AgentState } from "./state";
-
 export type StreamPhase =
     | "routing"
     | "textbook_retrieval"
@@ -29,7 +27,7 @@ export interface StreamEvent {
  * Convert LangGraph stream events to SSE-friendly format
  */
 export function* convertStreamEvents(
-    asyncGenerator: AsyncGenerator<Record<string, any>, void, unknown>
+    asyncGenerator: AsyncGenerator<Record<string, Record<string, unknown>>, void, unknown>
 ): AsyncGenerator<StreamEvent, void, unknown> {
     let phase: StreamPhase = "routing";
 

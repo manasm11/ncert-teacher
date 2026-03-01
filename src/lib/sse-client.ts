@@ -7,7 +7,7 @@ export type SSEventType = "status" | "token" | "done" | "error" | string;
 
 export interface SSEvent {
     type: SSEventType;
-    data: any;
+    data: Record<string, unknown>;
     retry?: number;
 }
 
@@ -25,7 +25,7 @@ export interface SSEClient {
     connect: (url: string) => void;
     disconnect: () => void;
     isConnected: () => boolean;
-    sendMessage: (data: any) => void;
+    sendMessage: (data: unknown) => void;
     getUnacknowledgedCount: () => number;
 }
 
@@ -38,7 +38,7 @@ export function createSSEClient(handlers: SSEventHandlers = {}): SSEClient {
     let reconnectAttempts = 0;
     let reconnectDelay = 1000; // Start with 1 second
     const maxReconnectDelay = 30000; // 30 seconds max
-    const messageQueue: any[] = [];
+    const messageQueue: { id: string; data: unknown; timestamp: number }[] = [];
     const messageAckTimeouts = new Map<string, NodeJS.Timeout>();
 
     // Configuration
@@ -170,7 +170,7 @@ export function createSSEClient(handlers: SSEventHandlers = {}): SSEClient {
         eventSource.onopen = handleOpen;
         eventSource.onmessage = handleMessage;
         eventSource.onerror = handleError;
-        eventSource.onclose = handleClose;
+        eventSource.addEventListener("close", handleClose);
 
         // Store for cleanup
         eventSource["__sseClient"] = {
@@ -217,7 +217,7 @@ export function createSSEClient(handlers: SSEventHandlers = {}): SSEClient {
      * Send a message to the server
      * Messages are queued if not connected
      */
-    function sendMessage(data: any) {
+    function sendMessage(data: unknown) {
         const messageId = `msg_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
         const message = {
@@ -272,7 +272,7 @@ export function createSSEClient(handlers: SSEventHandlers = {}): SSEClient {
     /**
      * Handle message ack timeout
      */
-    function handleAckTimeout(message: any) {
+    function handleAckTimeout(message: { id: string; data: unknown; timestamp: number }) {
         console.warn(`Message ${message.id} ack timeout`);
         messageAckTimeouts.delete(message.id);
 

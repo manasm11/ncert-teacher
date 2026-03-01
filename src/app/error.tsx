@@ -4,7 +4,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AlertTriangle, Leaf, RefreshCw, Home } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 /**
  * Error boundary fallback component for App Router.
@@ -17,7 +17,6 @@ interface ErrorFallbackProps {
 
 const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, reset }) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const handleReset = () => {
     reset();
@@ -41,7 +40,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, reset }) => {
           <div className="space-y-2">
             <CardTitle className="text-2xl font-outfit">Oops! Gyanu tripped over a root</CardTitle>
             <CardDescription className="text-muted-foreground">
-              Something went wrong while loading this page. We've logged the error and will look into it.
+              Something went wrong while loading this page. We&apos;ve logged the error and will look into it.
             </CardDescription>
           </div>
         </CardHeader>

@@ -95,7 +95,7 @@ TextSkeleton.displayName = "TextSkeleton";
 /**
  * CardSkeleton component for simulating a card with header, content, and footer.
  */
-export interface CardSkeletonProps extends React.HTMLAttributes<HTMLDivElement> {}
+export type CardSkeletonProps = React.HTMLAttributes<HTMLDivElement>;
 
 const CardSkeleton = React.forwardRef<HTMLDivElement, CardSkeletonProps>(
     ({ className, ...props }, ref) => {
@@ -156,7 +156,7 @@ ListSkeleton.displayName = "ListSkeleton";
 /**
  * AvatarSkeleton component for simulating an avatar with name and description.
  */
-export interface AvatarSkeletonProps extends React.HTMLAttributes<HTMLDivElement> {}
+export type AvatarSkeletonProps = React.HTMLAttributes<HTMLDivElement>;
 
 const AvatarSkeleton = React.forwardRef<HTMLDivElement, AvatarSkeletonProps>(
     ({ className, ...props }, ref) => {
@@ -181,7 +181,7 @@ AvatarSkeleton.displayName = "AvatarSkeleton";
  * DashboardChapterSkeleton component for simulating a chapter card in the learning map.
  * Follows the forest/nature theme with primary and secondary colors.
  */
-export interface DashboardChapterSkeletonProps extends React.HTMLAttributes<HTMLDivElement> {}
+export type DashboardChapterSkeletonProps = React.HTMLAttributes<HTMLDivElement>;
 
 const DashboardChapterSkeleton = React.forwardRef<HTMLDivElement, DashboardChapterSkeletonProps>(
     ({ className, ...props }, ref) => {
@@ -329,7 +329,7 @@ AdminTableSkeleton.displayName = "AdminTableSkeleton";
  * ProfileStatsSkeleton component for simulating a stats card in the profile page.
  * Follows the forest/nature theme.
  */
-export interface ProfileStatsSkeletonProps extends React.HTMLAttributes<HTMLDivElement> {}
+export type ProfileStatsSkeletonProps = React.HTMLAttributes<HTMLDivElement>;
 
 const ProfileStatsSkeleton = React.forwardRef<HTMLDivElement, ProfileStatsSkeletonProps>(
     ({ className, ...props }, ref) => {
@@ -352,7 +352,7 @@ ProfileStatsSkeleton.displayName = "ProfileStatsSkeleton";
  * QuizQuestionSkeleton component for simulating a quiz question card.
  * Follows the forest/nature theme.
  */
-export interface QuizQuestionSkeletonProps extends React.HTMLAttributes<HTMLDivElement> {}
+export type QuizQuestionSkeletonProps = React.HTMLAttributes<HTMLDivElement>;
 
 const QuizQuestionSkeleton = React.forwardRef<HTMLDivElement, QuizQuestionSkeletonProps>(
     ({ className, ...props }, ref) => {
@@ -387,7 +387,7 @@ QuizQuestionSkeleton.displayName = "QuizQuestionSkeleton";
  * QuizOptionSkeleton component for simulating a quiz option.
  * Follows the forest/nature theme.
  */
-export interface QuizOptionSkeletonProps extends React.HTMLAttributes<HTMLDivElement> {}
+export type QuizOptionSkeletonProps = React.HTMLAttributes<HTMLDivElement>;
 
 const QuizOptionSkeleton = React.forwardRef<HTMLDivElement, QuizOptionSkeletonProps>(
     ({ className, ...props }, ref) => {

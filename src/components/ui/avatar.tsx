@@ -52,12 +52,12 @@ const Avatar = React.forwardRef<
 });
 Avatar.displayName = AvatarPrimitive.Root.displayName;
 
-export interface AvatarImageProps extends React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image> {}
+export type AvatarImageProps = React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>;
 
 const AvatarImage = React.forwardRef<
     React.ElementRef<typeof AvatarPrimitive.Image>,
     AvatarImageProps
->(({ className, ...props }, ref) => {
+>(({ ...props }, ref) => {
     return (
         <AvatarPrimitive.Image
             ref={ref}

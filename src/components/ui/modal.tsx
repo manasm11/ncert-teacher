@@ -89,7 +89,7 @@ const ModalContent = React.forwardRef<
 });
 ModalContent.displayName = DialogPrimitive.Content.displayName;
 
-export interface ModalHeaderProps extends React.HTMLAttributes<HTMLDivElement> {}
+export type ModalHeaderProps = React.HTMLAttributes<HTMLDivElement>;
 
 const ModalHeader = React.forwardRef<HTMLDivElement, ModalHeaderProps>(
     ({ className, children, ...props }, ref) => {
@@ -106,7 +106,7 @@ const ModalHeader = React.forwardRef<HTMLDivElement, ModalHeaderProps>(
 );
 ModalHeader.displayName = "ModalHeader";
 
-export interface ModalTitleProps extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title> {}
+export type ModalTitleProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>;
 
 const ModalTitle = React.forwardRef<
     React.ElementRef<typeof DialogPrimitive.Title>,
@@ -124,7 +124,7 @@ const ModalTitle = React.forwardRef<
 });
 ModalTitle.displayName = DialogPrimitive.Title.displayName;
 
-export interface ModalDescriptionProps extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description> {}
+export type ModalDescriptionProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>;
 
 const ModalDescription = React.forwardRef<
     React.ElementRef<typeof DialogPrimitive.Description>,
@@ -142,7 +142,7 @@ const ModalDescription = React.forwardRef<
 });
 ModalDescription.displayName = DialogPrimitive.Description.displayName;
 
-export interface ModalFooterProps extends React.HTMLAttributes<HTMLDivElement> {}
+export type ModalFooterProps = React.HTMLAttributes<HTMLDivElement>;
 
 const ModalFooter = React.forwardRef<HTMLDivElement, ModalFooterProps>(
     ({ className, children, ...props }, ref) => {
@@ -159,7 +159,7 @@ const ModalFooter = React.forwardRef<HTMLDivElement, ModalFooterProps>(
 );
 ModalFooter.displayName = "ModalFooter";
 
-export interface ModalBodyProps extends React.HTMLAttributes<HTMLDivElement> {}
+export type ModalBodyProps = React.HTMLAttributes<HTMLDivElement>;
 
 const ModalBody = React.forwardRef<HTMLDivElement, ModalBodyProps>(
     ({ className, children, ...props }, ref) => {

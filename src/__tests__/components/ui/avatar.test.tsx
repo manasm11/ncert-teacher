@@ -1,3 +1,4 @@
+import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import {
@@ -8,23 +9,25 @@ import {
   AvatarWithFallback,
 } from "@/components/ui/avatar";
 
+type MockProps = React.PropsWithChildren<Record<string, unknown>>;
+
 // Mock Radix UI primitives
 vi.mock("@radix-ui/react-avatar", async () => {
   const actual = await vi.importActual("@radix-ui/react-avatar");
   return {
     ...actual,
     Root: Object.assign(
-      (props: any) => <div data-testid="mock-avatar-root" {...props} />,
+      (props: MockProps) => <div data-testid="mock-avatar-root" {...props} />,
       { displayName: "Root" }
     ),
     Image: Object.assign(
-      (props: any) => <img data-testid="mock-avatar-image" {...props} />,
+      (props: MockProps) => <img data-testid="mock-avatar-image" alt={props.alt as string} {...props} />,
       { displayName: "Image" }
     ),
     Fallback: Object.assign(
-      (props: any) => (
+      (props: MockProps) => (
         <div data-testid="mock-avatar-fallback" {...props}>
-          {props.text || props.children}
+          {(props.text as string) || props.children}
         </div>
       ),
       { displayName: "Fallback" }

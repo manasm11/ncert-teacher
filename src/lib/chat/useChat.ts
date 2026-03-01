@@ -142,7 +142,7 @@ export function useChat(conversationId?: string): UseChatResult {
 
                                 if (eventType === "status") {
                                     setPhase({
-                                        name: data.phase as any,
+                                        name: data.phase as ChatPhase["name"],
                                         message: data.message,
                                     });
                                 } else if (eventType === "token") {
