@@ -3,6 +3,8 @@
 import React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 
+import { cn } from "@/lib/utils";
+
 /**
  * Variants for the Card component following the forest/nature theme.
  */
@@ -70,7 +72,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
         return (
             <div
                 ref={ref}
-                className={cardVariants({ variant, className })}
+                className={cn(cardVariants({ variant, className }))}
                 {...props}
             >
                 {children}
@@ -89,7 +91,7 @@ const CardHeader = React.forwardRef<HTMLDivElement, CardHeaderProps>(
         return (
             <div
                 ref={ref}
-                className={cardHeaderVariants({ spacing, className })}
+                className={cn(cardHeaderVariants({ spacing, className }))}
                 {...props}
             >
                 {children}
@@ -106,7 +108,7 @@ const CardTitle = React.forwardRef<HTMLHeadingElement, CardTitleProps>(
         return (
             <h3
                 ref={ref}
-                className={`font-outfit text-xl font-bold text-foreground ${className || ""}`}
+                className={cn("font-outfit text-xl font-bold text-foreground", className)}
                 {...props}
             >
                 {children}
@@ -123,7 +125,7 @@ const CardDescription = React.forwardRef<HTMLParagraphElement, CardDescriptionPr
         return (
             <p
                 ref={ref}
-                className={`text-sm text-muted-foreground mt-1 ${className || ""}`}
+                className={cn("text-sm text-muted-foreground mt-1", className)}
                 {...props}
             >
                 {children}
@@ -142,7 +144,7 @@ const CardContent = React.forwardRef<HTMLDivElement, CardContentProps>(
         return (
             <div
                 ref={ref}
-                className={cardContentVariants({ padding, className })}
+                className={cn(cardContentVariants({ padding, className }))}
                 {...props}
             >
                 {children}
@@ -161,7 +163,7 @@ const CardFooter = React.forwardRef<HTMLDivElement, CardFooterProps>(
         return (
             <div
                 ref={ref}
-                className={cardFooterVariants({ spacing, className })}
+                className={cn(cardFooterVariants({ spacing, className }))}
                 {...props}
             >
                 {children}

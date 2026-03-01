@@ -3,6 +3,8 @@
 import React from "react";
 import { cva } from "class-variance-authority";
 
+import { cn } from "@/lib/utils";
+
 /**
  * Variants for the Input component following the forest/nature theme.
  */
@@ -32,7 +34,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         return (
             <input
                 type={type}
-                className={inputVariants({ variant, className })}
+                className={cn(inputVariants({ variant, className }))}
                 ref={ref}
                 {...props}
             />
@@ -66,7 +68,7 @@ const InputWithLabel = React.forwardRef<HTMLInputElement, InputWithLabelProps>(
                 <input
                     id={inputId}
                     type={type}
-                    className={inputVariants({ variant, className }) + (hasError ? " text-destructive focus-visible:ring-destructive" : "")}
+                    className={cn(inputVariants({ variant, className }), hasError ? "text-destructive focus-visible:ring-destructive" : "")}
                     ref={ref}
                     aria-invalid={hasError}
                     aria-describedby={error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined}

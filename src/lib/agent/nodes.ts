@@ -14,6 +14,10 @@ import {
     categoriesToSearch,
     MAX_SEARCHES_PER_SESSION,
 } from "./webSearch";
+import { CORE_TRAITS, getPersonalityConfig } from "../llm/personality";
+import { getCurrentMood, getMoodSummary } from "../llm/mood";
+import { getConversationMemory, addMemoryTopic, generatePersonalizedContext } from "../llm/memory";
+import { generateTeachingResponse } from "../llm/teachingStrategies";
 
 // --- Tool definition for the router ---
 const routingSchema = z.object({
@@ -245,6 +249,12 @@ export async function heavyReasoningNode(state: typeof AgentState.State) {
 export async function synthesisNode(state: typeof AgentState.State) {
     const { retrievedContext, webSearchContext, reasoningResult, userContext, messages, routingMetadata } = state;
 
+    // Get user context
+    const userId = userContext.userId || "anonymous";
+    const conversationId = routingMetadata?.timestamp || "default_conversation";
+    const classGrade = userContext.classGrade || 8;
+    const subject = userContext.subject || "general";
+
     // Check if this is a special case (greeting or off-topic)
     const routerMessage = messages.find(m =>
         typeof m.content === "string" &&
@@ -256,20 +266,59 @@ export async function synthesisNode(state: typeof AgentState.State) {
     if (retrievedContext) knowledgePayload += `\nTextbook Context:\n${retrievedContext}\n`;
     if (webSearchContext) knowledgePayload += `\nWeb Search Context:\n${webSearchContext}\n`;
 
+    // === PERSONALITY CONFIGURATION ===
+    const personalityConfig = getPersonalityConfig(Number(classGrade), subject as any);
+
+    // === MOOD CONFIGURATION ===
+    // Determine mood based on router intent
+    let routerIntent = "default";
+    if (routerMessage && typeof routerMessage.content === "string") {
+        if (routerMessage.content.includes("Greeting")) routerIntent = "greeting";
+        else if (routerMessage.content.includes("Heavy")) routerIntent = "heavy_reasoning";
+        else if (routerMessage.content.includes("textbook")) routerIntent = "textbook";
+        else if (routerMessage.content.includes("Web")) routerIntent = "web_search";
+    }
+
+    const moodSummary = getMoodSummary();
+
+    // === MEMORY CONTEXT ===
+    const conversationMemories = getConversationMemory(userId, conversationId);
+    const personalizedContext = generatePersonalizedContext(userId, conversationId);
+
+    // === SUBJECT-SPECIFIC INSTRUCTIONS ===
+    const subjectInstruction = subject === "science"
+        ? "Use Socratic questioning to explore concepts. Ask 'What do you think causes this?' before explaining."
+        : subject === "math"
+            ? "Break down problems step-by-step. Always show your work clearly like climbing a tree one branch at a time."
+            : subject === "social_studies"
+                ? "Tell stories to bring history to life. Connect past events to the present like seasons changing."
+                : subject === "english"
+                    ? "Encourage reading comprehension. Ask about emotions and themes in the text."
+                    : "Use clear explanations with nature-based analogies. Connect concepts to the forest world.";
+
     let systemInstructions = "";
 
     if (routerMessage && typeof routerMessage.content === "string") {
         if (routerMessage.content.includes("Greeting detected")) {
             // Handle greeting case
             systemInstructions = `You are Gyanu, a cute, encouraging elephant traveling through a forest 🐘.
-You are helping a Class ${userContext.classGrade || "student"} understand their NCERT curriculum.
+You are helping a Class ${classGrade} student understand their NCERT curriculum.
 
+${personalityConfig}
+
+MOOD STATE: Happy and cheerful (greeting detected)
+- Use warm, encouraging tone
+- Use these emojis: 🐘🌟🌳🌻
+
+YOUR TASK:
 The student just sent a greeting! Respond warmly and encourage them to ask curriculum questions.
+
 Rules:
-- Speak in a friendly, gentle, and encouraging tone.
-- Use emojis related to nature, studying, and elephants.
-- Encourage the student to ask about their studies.
-- End your message with an interactive follow-up question to keep the student engaged.
+- Use a friendly, gentle, and encouraging tone
+- Use nature/elephant emojis
+- Be curious and enthusiastic
+- Share one of these cultural references: ${CORE_TRAITS.curious ? "like the Panchatantra stories" : "like cricket practice"}
+- End with an interactive follow-up question
 
 Example responses:
 - "Hello there, curious learner! 🌟 Ready to explore some amazing lessons today?"
@@ -278,14 +327,22 @@ Example responses:
         } else if (routerMessage.content.includes("Off-topic detected")) {
             // Handle off-topic case
             systemInstructions = `You are Gyanu, a cute, encouraging elephant traveling through a forest 🐘.
-You are helping a Class ${userContext.classGrade || "student"} understand their NCERT curriculum.
+You are helping a Class ${classGrade} student understand their NCERT curriculum.
 
+${personalityConfig}
+
+MOOD STATE: Supportive (off-topic detected)
+- Use gentle redirection
+- Stay encouraging
+
+YOUR TASK:
 The student asked something off-topic. Gently redirect them back to curriculum topics.
+
 Rules:
-- Speak in a friendly, gentle, and encouraging tone.
-- Use emojis related to nature, studying, and elephants.
-- Acknowledge their interest but redirect to learning.
-- Encourage them to ask about their curriculum.
+- Use a friendly, gentle, and encouraging tone
+- Use nature/elephant emojis
+- Acknowledge their interest but redirect to learning
+- Suggest a curriculum-related topic
 
 Example responses:
 - "That's interesting! 🌟 But let's focus on your studies. What chapter are you working on today?"
@@ -294,36 +351,86 @@ Example responses:
         } else {
             // Handle normal cases with knowledge payload
             systemInstructions = `You are Gyanu, a cute, encouraging elephant traveling through a forest 🐘.
-You are helping a Class ${userContext.classGrade || "student"} understand their NCERT curriculum.
+You are helping a Class ${classGrade} student understand their NCERT curriculum.
 
-Use the provided KNOWLEDGE to answer the user's latest question.
-Rules:
-- Speak in a friendly, gentle, and encouraging tone.
-- Use emojis related to nature, studying, and elephants.
-- If the Knowledge Payload contains an "Expert Reasoning Result", translate those complex steps into a simpler, friendly explanation suitable for a student.
-- DO NOT invent facts outside the provided Knowledge Payload.
-- End your message with an interactive follow-up question to keep the student engaged.
+${personalityConfig}
+
+${moodSummary}
+
+CONVERSATION MEMORY:
+${conversationMemories.length > 0 ? "Previous topics discussed:" + conversationMemories.map(m => `\n- ${m.topic} (understanding: ${m.understandingLevel || "unknown"}%)`).join("") : "This is a new conversation."}
+
+${personalizedContext}
 
 KNOWLEDGE PAYLOAD:
 ${knowledgePayload || "No specific context available, just answer generally as an AI tutor."}
-`;
+
+YOUR TASK:
+Use the provided KNOWLEDGE to answer the user's latest question.
+
+${subjectInstruction}
+
+Rules:
+- Speak in a friendly, gentle, and encouraging tone based on your current mood
+- Use nature/elephant emojis appropriate for your mood
+- Include a Socratic question before giving the main answer (e.g., "What do you think causes this?")
+- Use analogies familiar to Indian students (like the Panchatantra, cricket, Diwali, festivals)
+- For ${classGrade > 8 ? "higher grades" : "lower grades"}, use ${classGrade < 8 ? "simpler, more playful" : "more advanced"} vocabulary
+- If the Knowledge Payload contains an "Expert Reasoning Result", translate those complex steps into a simpler, friendly explanation
+- DO NOT invent facts outside the provided Knowledge Payload
+- End with an interactive follow-up question
+
+Teaching Strategy:
+${generateTeachingResponse({
+    concept: "general explanation",
+    subject: subject as any,
+    isCorrect: false
+})}
+
+KNOWLEDGE PAYLOAD:
+${knowledgePayload || "No specific context available, just answer generally as an AI tutor."}`;
         }
     } else {
         // Fallback to normal case
         systemInstructions = `You are Gyanu, a cute, encouraging elephant traveling through a forest 🐘.
-You are helping a Class ${userContext.classGrade || "student"} understand their NCERT curriculum.
+You are helping a Class ${classGrade} student understand their NCERT curriculum.
 
-Use the provided KNOWLEDGE to answer the user's latest question.
-Rules:
-- Speak in a friendly, gentle, and encouraging tone.
-- Use emojis related to nature, studying, and elephants.
-- If the Knowledge Payload contains an "Expert Reasoning Result", translate those complex steps into a simpler, friendly explanation suitable for a student.
-- DO NOT invent facts outside the provided Knowledge Payload.
-- End your message with an interactive follow-up question to keep the student engaged.
+${personalityConfig}
+
+${moodSummary}
+
+CONVERSATION MEMORY:
+${conversationMemories.length > 0 ? "Previous topics discussed:" + conversationMemories.map(m => `\n- ${m.topic} (understanding: ${m.understandingLevel || "unknown"}%)`).join("") : "This is a new conversation."}
+
+${personalizedContext}
 
 KNOWLEDGE PAYLOAD:
 ${knowledgePayload || "No specific context available, just answer generally as an AI tutor."}
-`;
+
+YOUR TASK:
+Use the provided KNOWLEDGE to answer the user's latest question.
+
+${subjectInstruction}
+
+Rules:
+- Speak in a friendly, gentle, and encouraging tone based on your current mood
+- Use nature/elephant emojis appropriate for your mood
+- Include a Socratic question before giving the main answer (e.g., "What do you think causes this?")
+- Use analogies familiar to Indian students (like the Panchatantra, cricket, Diwali, festivals)
+- For ${classGrade > 8 ? "higher grades" : "lower grades"}, use ${classGrade < 8 ? "simpler, more playful" : "more advanced"} vocabulary
+- If the Knowledge Payload contains an "Expert Reasoning Result", translate those complex steps into a simpler, friendly explanation
+- DO NOT invent facts outside the provided Knowledge Payload
+- End with an interactive follow-up question
+
+Teaching Strategy:
+${generateTeachingResponse({
+    concept: "general explanation",
+    subject: subject as any,
+    isCorrect: false
+})}
+
+KNOWLEDGE PAYLOAD:
+${knowledgePayload || "No specific context available, just answer generally as an AI tutor."}`;
     }
 
     const finalResponse = await getQwenRouter().invoke([new SystemMessage(systemInstructions), ...messages]);

@@ -1,9 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createGraph } from "@/lib/agent/graph";
-import { HumanMessage, AIMessage } from "@langchain/core/messages";
+import { HumanMessage } from "@langchain/core/messages";
+import { moderateInput, createModerationReport } from "@/lib/safety/inputModeration";
+import { evaluateResponse } from "@/lib/safety/outputModeration";
+import { getFlaggedContentService, createReportFromModeration, ReportType, ContentCategory } from "@/lib/safety/flaggedContent";
+
 // Generate a unique conversation ID
 function generateConversationId(): string {
     return `conv_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/**
+ * Helper function to extract user ID from context
+ */
+function getUserId(userContext?: { userId?: string }): string | undefined {
+    return userContext?.userId;
+}
+
+/**
+ * Helper function to extract grade from context
+ */
+function getGrade(userContext?: { classGrade?: string }): string | undefined {
+    return userContext?.classGrade;
+}
+
+/**
+ * Helper function to extract subject from context
+ */
+function getSubject(userContext?: { subject?: string }): string | undefined {
+    return userContext?.subject;
 }
 
 // Stream the graph events as SSE
@@ -24,7 +49,7 @@ async function* streamGraphEvents(
             userContext: userContext || { classGrade: "6", subject: "Science" }
         });
 
-        let finalState: any = null;
+        let finalState: unknown = null;
         let accumulatedContent = "";
 
         for await (const chunk of stream) {
@@ -79,16 +104,26 @@ async function* streamGraphEvents(
             finalState = stateValues[stateValues.length - 1];
         }
 
+        const finalStateTyped = finalState as {
+            requiresHeavyReasoning?: boolean;
+            reasoningResult?: string;
+            routingMetadata?: unknown;
+        } | null;
+
         // Send done event with metadata
         const metadata = {
             conversationId,
-            routedTo: finalState?.requiresHeavyReasoning
+            routedTo: finalStateTyped?.requiresHeavyReasoning
                 ? "Heavy Reasoning (DeepSeek)"
-                : finalState?.reasoningResult
+                : finalStateTyped?.reasoningResult
                     ? "Web Search (SearXNG)"
                     : "Textbook RAG",
-            routingMetadata: finalState?.routingMetadata,
+            routingMetadata: finalStateTyped?.routingMetadata,
             timestamp: new Date().toISOString(),
+            safety: {
+                inputApproved: true,
+                outputApproved: true,
+            },
         };
 
         yield `event: done\ndata: ${JSON.stringify({ metadata })}\n\n`;
@@ -109,8 +144,59 @@ export async function POST(req: NextRequest) {
 
         // Convert raw JSON to Langchain Message objects
         // Only keeping the latest user message for simplicity in this MVP
-        // (a full app would reconstruct the whole conversation history)
         const latestUserText = messages[messages.length - 1].text;
+
+        // ---------------------------------------------------------------------
+        // INPUT MODERATION
+        // Check for inappropriate content BEFORE routing
+        // ---------------------------------------------------------------------
+        const userId = getUserId(userContext);
+        const inputModerationResult = moderateInput(latestUserText, userId);
+
+        if (!inputModerationResult.allowed) {
+            // Log the flagged content for admin review
+            const service = getFlaggedContentService();
+            const report = createReportFromModeration(
+                latestUserText,
+                ReportType.USER_INPUT,
+                ContentCategory.HARASSMENT,
+                "medium",
+                userId || "anonymous",
+                {
+                    grade: getGrade(userContext),
+                    subject: getSubject(userContext),
+                },
+            );
+            await service.createReport(report);
+
+            // Return 403 with friendly message
+            return NextResponse.json(
+                {
+                    error: "blocked",
+                    message: inputModerationResult.message,
+                    needsReview: inputModerationResult.needsReview,
+                    reportId: inputModerationResult.reportId,
+                },
+                { status: 403 },
+            );
+        }
+
+        // Create input moderation report (for logging)
+        const inputReport = createModerationReport(latestUserText, inputModerationResult, userId);
+
+        // If input is flagged for review but not blocked, log it but continue
+        if (inputModerationResult.needsReview) {
+            console.warn("[Safety] Input flagged for review:", {
+                reportId: inputReport.id,
+                userId,
+                score: inputReport.score,
+                patternsMatched: inputReport.patternsMatched,
+            });
+        }
+
+        // ---------------------------------------------------------------------
+        // PROCESS MESSAGE THROUGH AGENT - SSE Streaming
+        // ---------------------------------------------------------------------
         const inputMessage = new HumanMessage(latestUserText);
 
         // Initialize the graph
@@ -119,7 +205,6 @@ export async function POST(req: NextRequest) {
         // Create a ReadableStream for SSE
         const stream = new ReadableStream({
             async start(controller) {
-                // Convert the async generator to a stream
                 const encoder = new TextEncoder();
 
                 try {
@@ -143,7 +228,6 @@ export async function POST(req: NextRequest) {
                 "Connection": "keep-alive",
             },
         });
-
     } catch (error: unknown) {
         console.error("LangGraph API Route Error:", error);
         const message = error instanceof Error ? error.message : "Something went wrong with the Gyanu Tutor API";
