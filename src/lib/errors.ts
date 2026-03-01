@@ -137,8 +137,6 @@ export class APIError extends RootError {
       status: response.status,
       statusText: response.statusText,
     });
-    error.status = response.status;
-    error.response = response;
     return error;
   }
 

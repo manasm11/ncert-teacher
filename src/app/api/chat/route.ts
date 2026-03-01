@@ -45,9 +45,12 @@ async function* streamGraphEvents(
 
             // Extract content from the chunk
             for (const [node, state] of Object.entries(chunk)) {
+                // Type guard for state with messages
+                const stateWithMessages = state as { messages?: Array<{ content?: string }> };
+
                 // Check for message content in synthesis node
-                if (node === "synthesis" && state.messages) {
-                    const lastMessage = state.messages[state.messages.length - 1];
+                if (node === "synthesis" && stateWithMessages.messages?.length) {
+                    const lastMessage = stateWithMessages.messages[stateWithMessages.messages.length - 1];
                     if (lastMessage && typeof lastMessage.content === "string") {
                         // Stream tokens as they come
                         const content = lastMessage.content;
@@ -61,15 +64,19 @@ async function* streamGraphEvents(
                     }
                 }
 
+                // Type guard for state with reasoningResult
+                const stateWithReasoning = state as { reasoningResult?: string };
+
                 // Check for reasoning results
-                if (node === "heavy_reasoning" && state.reasoningResult) {
-                    yield `event: token\ndata: ${JSON.stringify({ content: state.reasoningResult })}\n\n`;
-                    accumulatedContent += state.reasoningResult;
+                if (node === "heavy_reasoning" && stateWithReasoning.reasoningResult) {
+                    yield `event: token\ndata: ${JSON.stringify({ content: stateWithReasoning.reasoningResult })}\n\n`;
+                    accumulatedContent += stateWithReasoning.reasoningResult;
                 }
             }
 
-            // Store final state for metadata
-            finalState = state;
+            // Store final state for metadata (get the last state's values)
+            const stateValues = Object.values(chunk);
+            finalState = stateValues[stateValues.length - 1];
         }
 
         // Send done event with metadata

@@ -1,6 +1,6 @@
 /**
  * SSE (Server-Sent Events) client utility
- * Provides automatic reconnection, message queuing, and event handling
+ * Provides automatic reconnection and event handling
  */
 
 export type SSEventType = "status" | "token" | "done" | "error" | string;
@@ -25,8 +25,6 @@ export interface SSEClient {
     connect: (url: string) => void;
     disconnect: () => void;
     isConnected: () => boolean;
-    sendMessage: (data: any) => void;
-    getUnacknowledgedCount: () => number;
 }
 
 /**
@@ -38,14 +36,13 @@ export function createSSEClient(handlers: SSEventHandlers = {}): SSEClient {
     let reconnectAttempts = 0;
     let reconnectDelay = 1000; // Start with 1 second
     const maxReconnectDelay = 30000; // 30 seconds max
-    const messageQueue: any[] = [];
-    const messageAckTimeouts = new Map<string, NodeJS.Timeout>();
+    let explicitClose = false;
+    let currentUrl: string | null = null;
 
     // Configuration
     const CONFIG = {
         maxReconnectAttempts: 5,
         baseReconnectDelay: 1000,
-        messageAckTimeout: 5000, // 5 seconds to acknowledge a message
     };
 
     /**
@@ -73,11 +70,9 @@ export function createSSEClient(handlers: SSEventHandlers = {}): SSEClient {
         connectionStatus = true;
         reconnectAttempts = 0;
         reconnectDelay = CONFIG.baseReconnectDelay;
+        explicitClose = false;
         handlers.onOpen?.();
         console.log("SSE connection opened");
-
-        // Process any queued messages
-        processMessageQueue();
     }
 
     /**
@@ -109,37 +104,35 @@ export function createSSEClient(handlers: SSEventHandlers = {}): SSEClient {
 
     /**
      * Handle SSE error event
+     * Note: EventSource doesn't have a native close event, so we handle
+     * connection drops through the error event and readyState checks
      */
     function handleError(error: Event) {
         console.error("SSE connection error:", error);
 
+        // Check if the connection was explicitly closed
+        if (explicitClose) {
+            return;
+        }
+
         if (connectionStatus) {
-            // We were connected, so we should reconnect
-            scheduleReconnect();
+            // We were connected, connection dropped
             connectionStatus = false;
+            handlers.onClose?.();
         }
+
+        // Try to reconnect if not explicitly closed
+        scheduleReconnect();
     }
 
     /**
-     * Handle SSE close event
-     */
-    function handleClose() {
-        console.log("SSE connection closed");
-        connectionStatus = false;
-        handlers.onClose?.();
-
-        // Try to reconnect unless we explicitly closed
-        if (eventSource !== null) {
-            scheduleReconnect();
-        }
-    }
-
-    /**
-     * Schedule a reconnection attempt
+     * Schedule a reconnection attempt with exponential backoff
      */
     function scheduleReconnect() {
-        if (reconnectAttempts >= CONFIG.maxReconnectAttempts) {
-            console.log("Max reconnection attempts reached");
+        if (explicitClose || reconnectAttempts >= CONFIG.maxReconnectAttempts) {
+            if (reconnectAttempts >= CONFIG.maxReconnectAttempts) {
+                console.log("Max reconnection attempts reached");
+            }
             return;
         }
 
@@ -149,16 +142,19 @@ export function createSSEClient(handlers: SSEventHandlers = {}): SSEClient {
         handlers.onReconnect?.(reconnectAttempts);
 
         setTimeout(() => {
-            if (eventSource === null) {
-                connectUrl(window.location.origin + "/api/chat");
+            if (!explicitClose && eventSource === null && currentUrl) {
+                // Reconnect to the same URL
+                connectUrl(currentUrl);
             }
         }, reconnectDelay);
 
         // Exponential backoff with jitter
-        reconnectDelay = Math.min(reconnectDelay * 1.5, maxReconnectDelay);
+        reconnectDelay = Math.min(reconnectDelay * 1.5 + Math.random() * 1000, maxReconnectDelay);
     }
 
     function connectUrl(url: string) {
+        // Store URL for reconnection
+        currentUrl = url;
         // Close existing connection
         if (eventSource) {
             eventSource.close();
@@ -170,24 +166,14 @@ export function createSSEClient(handlers: SSEventHandlers = {}): SSEClient {
         eventSource.onopen = handleOpen;
         eventSource.onmessage = handleMessage;
         eventSource.onerror = handleError;
-        eventSource.onclose = handleClose;
-
-        // Store for cleanup
-        eventSource["__sseClient"] = {
-            disconnect: () => {
-                if (eventSource) {
-                    eventSource.close();
-                    eventSource = null;
-                    connectionStatus = false;
-                }
-            },
-        };
+        // Note: EventSource does NOT have onclose - we detect closure via onerror
     }
 
     /**
      * Connect to a URL
      */
     function connect(url: string) {
+        explicitClose = false;
         connectUrl(url);
     }
 
@@ -195,106 +181,26 @@ export function createSSEClient(handlers: SSEventHandlers = {}): SSEClient {
      * Disconnect from the SSE stream
      */
     function disconnect() {
+        explicitClose = true;
         if (eventSource) {
             eventSource.close();
             eventSource = null;
         }
         connectionStatus = false;
-
-        // Clear all message timeouts
-        messageAckTimeouts.forEach((timeout) => clearTimeout(timeout));
-        messageAckTimeouts.clear();
+        handlers.onClose?.();
     }
 
     /**
      * Check if connected
      */
     function isConnected() {
-        return connectionStatus;
-    }
-
-    /**
-     * Send a message to the server
-     * Messages are queued if not connected
-     */
-    function sendMessage(data: any) {
-        const messageId = `msg_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-
-        const message = {
-            id: messageId,
-            data,
-            timestamp: Date.now(),
-        };
-
-        // Queue the message
-        messageQueue.push(message);
-
-        // Start ack timeout
-        const timeout = setTimeout(() => {
-            handleAckTimeout(message);
-        }, CONFIG.messageAckTimeout);
-
-        messageAckTimeouts.set(messageId, timeout);
-
-        // If connected, try to send immediately
-        if (isConnected()) {
-            processMessageQueue();
-        }
-    }
-
-    /**
-     * Process the message queue
-     */
-    function processMessageQueue() {
-        if (!isConnected() || !eventSource || messageQueue.length === 0) {
-            return;
-        }
-
-        // Send messages that haven't been acknowledged
-        for (const message of messageQueue) {
-            if (!messageAckTimeouts.has(message.id)) {
-                // Already acknowledged, skip
-                continue;
-            }
-
-            try {
-                eventSource["dispatchEvent"](
-                    new MessageEvent("message", {
-                        data: JSON.stringify(message.data),
-                    })
-                );
-            } catch (error) {
-                console.error("Failed to send message:", error);
-            }
-        }
-    }
-
-    /**
-     * Handle message ack timeout
-     */
-    function handleAckTimeout(message: any) {
-        console.warn(`Message ${message.id} ack timeout`);
-        messageAckTimeouts.delete(message.id);
-
-        // Resend the message
-        if (isConnected()) {
-            processMessageQueue();
-        }
-    }
-
-    /**
-     * Get count of unacknowledged messages
-     */
-    function getUnacknowledgedCount() {
-        return messageQueue.length;
+        return connectionStatus && eventSource?.readyState === EventSource.OPEN;
     }
 
     return {
         connect,
         disconnect,
-        isConnected: isConnected,
-        sendMessage,
-        getUnacknowledgedCount,
+        isConnected,
     };
 }
 

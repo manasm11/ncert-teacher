@@ -28,7 +28,7 @@ export interface StreamEvent {
 /**
  * Convert LangGraph stream events to SSE-friendly format
  */
-export function* convertStreamEvents(
+export async function* convertStreamEvents(
     asyncGenerator: AsyncGenerator<Record<string, any>, void, unknown>
 ): AsyncGenerator<StreamEvent, void, unknown> {
     let phase: StreamPhase = "routing";

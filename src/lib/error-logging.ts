@@ -20,7 +20,16 @@ interface ErrorContext {
   sessionId?: string;
   path?: string;
   action?: string;
+  timestamp?: string;
+  environment?: string;
+  userFriendlyMessage?: string;
+  isNonError?: boolean;
+  navigation?: {
+    path: string;
+    type: string;
+  };
   extra?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 let currentContext: ErrorContext = {};
@@ -251,7 +260,6 @@ export function logAuthError(
   logError(error, {
     ...extraContext,
     auth: {
-      type,
       type: "auth_error",
     },
   });

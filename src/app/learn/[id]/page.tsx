@@ -1,22 +1,16 @@
 "use client";
 
-import { use, useState, useRef, useCallback, useEffect } from "react";
+import { use, useRef, useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Send, Sparkles, BookOpen, X } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import MarkdownRenderer from "@/components/ui/markdown-renderer";
+import { useChat } from "@/lib/chat/useChat";
 
 export default function LearnInteractivePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
-    // Placeholder state for the chat
-    const [messages, setMessages] = useState([
-        { role: "assistant", text: "Hello there! I'm Gyanu 🐘. Ready to dive into today's chapter? Ask me anything when you get stuck!" }
-    ]);
+    const { messages, isGenerating, phase, sendMessage, abort } = useChat(id);
     const [input, setInput] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-    const [phase, setPhase] = useState<string>("idle");
-    const [phaseMessage, setPhaseMessage] = useState<string>("");
-    const abortControllerRef = useRef<AbortController | null>(null);
 
     // Scroll to bottom when messages change
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -27,133 +21,41 @@ export default function LearnInteractivePage({ params }: { params: Promise<{ id:
 
     useEffect(() => {
         scrollToBottom();
-    }, [messages, isLoading, scrollToBottom]);
+    }, [messages, isGenerating, scrollToBottom]);
 
     const handleSend = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!input.trim() || isLoading) return;
+        if (!input.trim() || isGenerating) return;
 
-        // Add user message
-        const userMessage = { role: "user", text: input };
-        const newMessages = [...messages, userMessage];
-        setMessages(newMessages);
+        const text = input;
         setInput("");
-        setIsLoading(true);
-        setPhase("routing");
-        setPhaseMessage("Analyzing your question...");
-
-        // Create abort controller for cancellation
-        abortControllerRef.current = new AbortController();
-
-        try {
-            const response = await fetch("/api/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    messages: newMessages,
-                    userContext: { classGrade: "6", subject: "Science", chapter: id }
-                }),
-                signal: abortControllerRef.current.signal
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || "Network response was not ok");
-            }
-
-            // Read SSE stream
-            const reader = response.body?.getReader();
-            if (!reader) {
-                throw new Error("Response body is empty");
-            }
-
-            let assistantText = "";
-
-            try {
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done || abortControllerRef.current?.signal.aborted) break;
-
-                    const chunk = new TextDecoder().decode(value);
-                    const lines = chunk.split("\n").filter((line) => line.trim());
-
-                    for (const line of lines) {
-                        if (line.startsWith("event:")) {
-                            const eventMatch = line.match(/^event:\s*(\w+)/);
-                            const eventType = eventMatch ? eventMatch[1] : "";
-
-                            // Next line should be the data
-                            const dataLineIndex = lines.indexOf(line) + 1;
-                            if (dataLineIndex < lines.length && lines[dataLineIndex]?.startsWith("data:")) {
-                                const data = JSON.parse(lines[dataLineIndex].substring(5).trim());
-
-                                if (eventType === "status") {
-                                    setPhase(data.phase || "idle");
-                                    setPhaseMessage(data.message || "");
-                                } else if (eventType === "token") {
-                                    assistantText += data.content;
-                                    // Update messages with partial text for streaming effect
-                                    setMessages(prev => {
-                                        const updated = [...prev];
-                                        // Find the last assistant message and update it
-                                        for (let i = updated.length - 1; i >= 0; i--) {
-                                            if (updated[i].role === "assistant") {
-                                                updated[i] = { ...updated[i], text: assistantText };
-                                                break;
-                                            }
-                                        }
-                                        return updated;
-                                    });
-                                } else if (eventType === "done") {
-                                    // Chat complete
-                                } else if (eventType === "error") {
-                                    throw new Error(data.error || "Streaming error");
-                                }
-                            }
-                        }
-                    }
-                }
-            } finally {
-                reader.releaseLock();
-            }
-
-            // Final message update
-            setMessages(prev => {
-                const updated = [...prev];
-                for (let i = updated.length - 1; i >= 0; i--) {
-                    if (updated[i].role === "assistant") {
-                        updated[i] = { ...updated[i], text: assistantText };
-                        break;
-                    }
-                }
-                return updated;
-            });
-        } catch (error: unknown) {
-            if (error instanceof Error && error.name === "AbortError") {
-                // Aborted by user, don't show error
-                setMessages(prev => [...prev, { role: "assistant", text: "Generation was cancelled." }]);
-                return;
-            }
-
-            console.error(error);
-            const errorMessage = error instanceof Error ? error.message : "An error occurred";
-            setMessages(prev => [...prev, { role: "assistant", text: `Oops! My connection to the forest map seems unstable right now! 🐘🌿\n\nError: ${errorMessage}` }]);
-        } finally {
-            setIsLoading(false);
-            setPhase("idle");
-            setPhaseMessage("");
-        }
-    }, [input, isLoading, messages, id]);
+        await sendMessage(text);
+    }, [input, isGenerating, sendMessage]);
 
     const handleAbort = useCallback(() => {
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-            abortControllerRef.current = null;
-        }
-        setIsLoading(false);
-        setPhase("idle");
-        setPhaseMessage("");
-    }, []);
+        abort();
+    }, [abort]);
+
+    // Get phase display info
+    const phaseColors: Record<string, string> = {
+        routing: "bg-amber-500",
+        textbook_retrieval: "bg-emerald-500",
+        web_search: "bg-sky-500",
+        heavy_reasoning: "bg-purple-500",
+        synthesis: "bg-blue-500",
+        idle: "bg-green-500",
+    };
+
+    const phaseTextColors: Record<string, string> = {
+        routing: "text-amber-600",
+        textbook_retrieval: "text-emerald-600",
+        web_search: "text-sky-600",
+        heavy_reasoning: "text-purple-600",
+        synthesis: "text-blue-600",
+        idle: "text-green-600",
+    };
+
+    const phaseMessage = phase.message || "Processing...";
 
     return (
         <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row bg-background overflow-hidden relative">
@@ -233,39 +135,23 @@ export default function LearnInteractivePage({ params }: { params: Promise<{ id:
                 </div>
 
                 {/* Phase Indicator (shows during generation) */}
-                {(isLoading || phase !== "idle") && (
+                {isGenerating && (
                     <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="px-6 pb-3"
                     >
                         <div className="flex items-center gap-3">
-                            <div className={`w-2 h-2 rounded-full animate-pulse ${
-                                phase === "routing" ? "bg-amber-500" :
-                                phase === "textbook_retrieval" ? "bg-emerald-500" :
-                                phase === "web_search" ? "bg-sky-500" :
-                                phase === "heavy_reasoning" ? "bg-purple-500" :
-                                phase === "synthesis" ? "bg-blue-500" :
-                                "bg-green-500"
-                            }`} />
-                            <span className={`text-sm font-medium ${
-                                phase === "routing" ? "text-amber-600" :
-                                phase === "textbook_retrieval" ? "text-emerald-600" :
-                                phase === "web_search" ? "text-sky-600" :
-                                phase === "heavy_reasoning" ? "text-purple-600" :
-                                phase === "synthesis" ? "text-blue-600" :
-                                "text-green-600"
-                            }`}>
-                                {phaseMessage || "Processing..."}
+                            <div className={`w-2 h-2 rounded-full animate-pulse ${phaseColors[phase.name] || "bg-green-500"}`} />
+                            <span className={`text-sm font-medium ${phaseTextColors[phase.name] || "text-green-600"}`}>
+                                {phaseMessage}
                             </span>
-                            {isLoading && (
-                                <button
-                                    onClick={handleAbort}
-                                    className="ml-auto text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-                                >
-                                    <X className="w-3 h-3" /> Cancel
-                                </button>
-                            )}
+                            <button
+                                onClick={handleAbort}
+                                className="ml-auto text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                            >
+                                <X className="w-3 h-3" /> Cancel
+                            </button>
                         </div>
                     </motion.div>
                 )}
@@ -276,7 +162,7 @@ export default function LearnInteractivePage({ params }: { params: Promise<{ id:
                         <motion.div
                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
-                            key={i}
+                            key={msg.id || i}
                             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
                             <div className={`max-w-[85%] rounded-2xl px-5 py-3 ${msg.role === 'user'
@@ -291,7 +177,7 @@ export default function LearnInteractivePage({ params }: { params: Promise<{ id:
                             </div>
                         </motion.div>
                     ))}
-                    {isLoading && phase === "routing" && (
+                    {isGenerating && phase.name === "routing" && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
                             <div className="bg-white border border-border shadow-sm rounded-2xl px-5 py-3 rounded-tl-sm">
                                 <div className="flex gap-1.5 items-center h-5">
@@ -314,9 +200,9 @@ export default function LearnInteractivePage({ params }: { params: Promise<{ id:
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Ask Gyanu a question..."
                             className="w-full pl-5 pr-14 py-4 rounded-full bg-muted/30 border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all text-sm shadow-inner text-foreground placeholder-muted-foreground"
-                            disabled={isLoading}
+                            disabled={isGenerating}
                         />
-                        {isLoading ? (
+                        {isGenerating ? (
                             <button
                                 type="button"
                                 onClick={handleAbort}

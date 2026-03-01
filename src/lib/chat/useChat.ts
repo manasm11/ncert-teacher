@@ -27,13 +27,19 @@ export interface UseChatResult {
     conversationId?: string;
 }
 
-const CHAT_HISTORY_KEY = "gyanu_chat_history";
+const DEFAULT_WELCOME_MESSAGE = "Hello there! I'm Gyanu 🐘. Ready to dive into today's chapter? Ask me anything when you get stuck!";
+
+function getChatHistoryKey(conversationId?: string): string {
+    return conversationId ? `gyanu_chat_${conversationId}` : "gyanu_chat_general";
+}
 
 export function useChat(conversationId?: string): UseChatResult {
+    const storageKey = getChatHistoryKey(conversationId);
+
     const [messages, setMessages] = useState<Message[]>(() => {
-        // Load history from localStorage if available
+        // Load history from localStorage if available (conversation-specific)
         try {
-            const stored = localStorage.getItem(CHAT_HISTORY_KEY);
+            const stored = localStorage.getItem(storageKey);
             if (stored) {
                 return JSON.parse(stored);
             }
@@ -43,7 +49,7 @@ export function useChat(conversationId?: string): UseChatResult {
         return [
             {
                 role: "assistant",
-                text: "Hello there! I'm Gyanu 🐘. Ready to dive into today's chapter? Ask me anything when you get stuck!",
+                text: DEFAULT_WELCOME_MESSAGE,
             },
         ];
     });
@@ -62,11 +68,11 @@ export function useChat(conversationId?: string): UseChatResult {
     // Save history to localStorage whenever messages change
     const saveHistory = useCallback((newMessages: Message[]) => {
         try {
-            localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(newMessages));
+            localStorage.setItem(storageKey, JSON.stringify(newMessages));
         } catch (error) {
             console.error("Failed to save chat history:", error);
         }
-    }, []);
+    }, [storageKey]);
 
     // Add a new message to the chat
     const addMessage = useCallback((role: "user" | "assistant", text: string) => {
@@ -89,7 +95,15 @@ export function useChat(conversationId?: string): UseChatResult {
         setPhase({ name: "routing", message: "Analyzing your question..." });
 
         const userMessage = addMessage("user", text);
-        const newMessages = [...messagesRef.current];
+
+        // Add placeholder assistant message for streaming
+        const placeholderMessage: Message = {
+            role: "assistant",
+            text: "",
+            id: `${Date.now()}_assistant`,
+        };
+        const messagesWithPlaceholder = [...messagesRef.current, placeholderMessage];
+        setMessages(messagesWithPlaceholder);
 
         abortControllerRef.current = new AbortController();
 
@@ -98,7 +112,7 @@ export function useChat(conversationId?: string): UseChatResult {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    messages: newMessages,
+                    messages: messagesWithPlaceholder,
                     userContext: {
                         classGrade: "6",
                         subject: "Science",
@@ -147,16 +161,14 @@ export function useChat(conversationId?: string): UseChatResult {
                                     });
                                 } else if (eventType === "token") {
                                     assistantText += data.content;
-                                    // Update messages with partial text for streaming effect
-                                    const currentMessages = [...messagesRef.current];
-                                    // Find the last assistant message and update it
-                                    for (let i = currentMessages.length - 1; i >= 0; i--) {
-                                        if (currentMessages[i].role === "assistant") {
-                                            currentMessages[i] = { ...currentMessages[i], text: assistantText };
-                                            break;
-                                        }
-                                    }
-                                    setMessages(currentMessages);
+                                    // Update the placeholder message with streaming content
+                                    setMessages(prev =>
+                                        prev.map(msg =>
+                                            msg.id === placeholderMessage.id
+                                                ? { ...msg, text: assistantText }
+                                                : msg
+                                        )
+                                    );
                                 } else if (eventType === "done") {
                                     responseMetadata = data.metadata;
                                 } else if (eventType === "error") {
@@ -170,14 +182,12 @@ export function useChat(conversationId?: string): UseChatResult {
                 reader.releaseLock();
             }
 
-            // Final message update
-            const finalMessages = [...messagesRef.current];
-            for (let i = finalMessages.length - 1; i >= 0; i--) {
-                if (finalMessages[i].role === "assistant") {
-                    finalMessages[i] = { ...finalMessages[i], text: assistantText };
-                    break;
-                }
-            }
+            // Final message update - ensure placeholder has final text
+            const finalMessages = messagesRef.current.map(msg =>
+                msg.id === placeholderMessage.id
+                    ? { ...msg, text: assistantText }
+                    : msg
+            );
             setMessages(finalMessages);
             saveHistory(finalMessages);
 
@@ -198,9 +208,10 @@ export function useChat(conversationId?: string): UseChatResult {
             setPhase({ name: "idle" });
 
             // Add error message
-            const errorMessages = [...messagesRef.current, {
-                role: "assistant",
+            const errorMessages: Message[] = [...messagesRef.current, {
+                role: "assistant" as const,
                 text: `Oops! My connection to the forest map seems unstable right now! 🐘🌿\n\nError: ${errorMessage}`,
+                id: Date.now().toString(),
             }];
             setMessages(errorMessages);
             saveHistory(errorMessages);
@@ -220,12 +231,11 @@ export function useChat(conversationId?: string): UseChatResult {
         setMessages([
             {
                 role: "assistant",
-                text: "Hello there! I'm Gyanu 🐘. Ready to dive into today's chapter? Ask me anything when you get stuck!",
+                text: DEFAULT_WELCOME_MESSAGE,
             },
         ]);
-        saveHistory([]);
-        localStorage.removeItem(CHAT_HISTORY_KEY);
-    }, [saveHistory]);
+        localStorage.removeItem(storageKey);
+    }, [storageKey]);
 
     return {
         messages,
