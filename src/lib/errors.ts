@@ -177,7 +177,7 @@ export class ValidationError extends RootError {
 
   static fromZodError(error: unknown): ValidationError {
     if (error instanceof Error && "issues" in error) {
-      const issues = (error as any).issues;
+      const issues = (error as { issues: unknown[] }).issues;
       if (Array.isArray(issues) && issues.length > 0) {
         const firstIssue = issues[0];
         const fieldName = firstIssue.path?.[0] ?? "this field";

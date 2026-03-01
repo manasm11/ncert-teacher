@@ -14,17 +14,18 @@ vi.mock("@radix-ui/react-avatar", async () => {
   return {
     ...actual,
     Root: Object.assign(
-      (props: any) => <div data-testid="mock-avatar-root" {...props} />,
+      (props: React.HTMLAttributes<HTMLDivElement>) => <div data-testid="mock-avatar-root" {...props} />,
       { displayName: "Root" }
     ),
     Image: Object.assign(
-      (props: any) => <img data-testid="mock-avatar-image" {...props} />,
+      // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
+      (props: React.ImgHTMLAttributes<HTMLImageElement>) => <img data-testid="mock-avatar-image" {...props} />,
       { displayName: "Image" }
     ),
     Fallback: Object.assign(
-      (props: any) => (
-        <div data-testid="mock-avatar-fallback" {...props}>
-          {props.text || props.children}
+      ({ text, children, ...rest }: React.HTMLAttributes<HTMLDivElement> & { text?: string }) => (
+        <div data-testid="mock-avatar-fallback" {...rest}>
+          {text || children}
         </div>
       ),
       { displayName: "Fallback" }
@@ -234,7 +235,7 @@ describe("Avatar", () => {
     it("accepts custom className on AvatarImage (passed through)", () => {
       render(
         <Avatar>
-          <AvatarImage src="/test.jpg" className="custom-image" />
+          <AvatarImage src="/test.jpg" alt="Custom" className="custom-image" />
         </Avatar>
       );
       // The AvatarImage component uses hardcoded className, so we just verify it renders

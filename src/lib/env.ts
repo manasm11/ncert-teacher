@@ -29,6 +29,7 @@ export const clientEnv = new Proxy({} as z.infer<typeof clientSchema>, {
 const serverSchema = z.object({
     OLLAMA_CLOUD_API_KEY: z.string().min(1, "OLLAMA_CLOUD_API_KEY is required"),
     OLLAMA_CLOUD_ENDPOINT: z.string().min(1, "OLLAMA_CLOUD_ENDPOINT is required"),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
     SEARXNG_URL: z.string().optional(),
 });
 

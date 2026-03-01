@@ -151,8 +151,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
 ));
 DropdownMenuSubTrigger.displayName = DropdownMenuPrimitive.SubTrigger.displayName;
 
-export interface DropdownMenuSubContentProps
-    extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent> {}
+export type DropdownMenuSubContentProps = React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>;
 
 const DropdownMenuSubContent = React.forwardRef<
     React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
@@ -166,8 +165,7 @@ const DropdownMenuSubContent = React.forwardRef<
 ));
 DropdownMenuSubContent.displayName = DropdownMenuPrimitive.SubContent.displayName;
 
-export interface DropdownMenuContentProps
-    extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> {}
+export type DropdownMenuContentProps = React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>;
 
 const DropdownMenuContent = React.forwardRef<
     React.ElementRef<typeof DropdownMenuPrimitive.Content>,
@@ -262,8 +260,7 @@ const DropdownMenuLabel = React.forwardRef<
 ));
 DropdownMenuLabel.displayName = DropdownMenuPrimitive.Label.displayName;
 
-export interface DropdownMenuSeparatorProps
-    extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator> {}
+export type DropdownMenuSeparatorProps = React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>;
 
 const DropdownMenuSeparator = React.forwardRef<
     React.ElementRef<typeof DropdownMenuPrimitive.Separator>,
@@ -277,7 +274,7 @@ const DropdownMenuSeparator = React.forwardRef<
 ));
 DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName;
 
-export interface DropdownMenuShortcutProps extends React.HTMLAttributes<HTMLSpanElement> {}
+export type DropdownMenuShortcutProps = React.HTMLAttributes<HTMLSpanElement>;
 
 const DropdownMenuShortcut = React.forwardRef<HTMLSpanElement, DropdownMenuShortcutProps>(
     ({ className, ...props }, ref) => {

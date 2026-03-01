@@ -3,7 +3,6 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import {
   Modal,
   ModalTrigger,
-  ModalClose,
   ModalContent,
   ModalHeader,
   ModalTitle,
@@ -15,17 +14,23 @@ import {
 // Mock Radix UI primitives
 let modalOpen = true;
 
+declare global {
+  interface Window {
+    __testModalOpen: boolean;
+  }
+}
+
 // Store close handler globally so Portal can check state
-(window as any).__testModalOpen = modalOpen;
+window.__testModalOpen = modalOpen;
 
 vi.mock("@radix-ui/react-dialog", async () => {
   const actual = await vi.importActual("@radix-ui/react-dialog");
   return {
     ...actual,
     Root: Object.assign(
-      ({ children, open, onOpenChange }: any) => {
+      ({ children, open, onOpenChange }: { children?: React.ReactNode; open?: boolean; onOpenChange?: (open: boolean) => void }) => {
         modalOpen = open !== undefined ? open : true;
-        (window as any).__testModalOpen = modalOpen;
+        window.__testModalOpen = modalOpen;
         return (
           <>
             {modalOpen && children}
@@ -33,7 +38,7 @@ vi.mock("@radix-ui/react-dialog", async () => {
               data-testid="mock-close-trigger"
               onClick={() => {
                 modalOpen = false;
-                (window as any).__testModalOpen = false;
+                window.__testModalOpen = false;
                 onOpenChange?.(false);
               }}
             >
@@ -45,18 +50,18 @@ vi.mock("@radix-ui/react-dialog", async () => {
       { displayName: "Root" }
     ),
     Trigger: Object.assign(
-      (props: any) => <button data-testid="mock-trigger" {...props} />,
+      (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => <button data-testid="mock-trigger" {...props} />,
       { displayName: "Trigger" }
     ),
     Close: Object.assign(
-      (props: any) => (
+      (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
         <button
           data-testid="mock-close"
           {...props}
-          onClick={(e: any) => {
+          onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
             // Track when close is clicked to update modal state
             modalOpen = false;
-            (window as any).__testModalOpen = false;
+            window.__testModalOpen = false;
             props.onClick?.(e);
           }}
         >
@@ -66,19 +71,16 @@ vi.mock("@radix-ui/react-dialog", async () => {
       { displayName: "Close" }
     ),
     Content: Object.assign(
-      (props: any) => {
-        // Debug: console.log("Content className:", JSON.stringify(props.className), "animated:", props.animated);
-
+      ({ animated, size, className: propClassName, children, ...rest }: React.HTMLAttributes<HTMLDivElement> & { animated?: boolean; size?: string }) => {
         // Simulate modalContentVariants behavior
         const baseClasses = "fixed left-1/2 top-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 shadow-playful border bg-card text-card-foreground rounded-2xl p-6";
-        const sizeClasses = props.size === "sm" ? "max-w-md" : props.size === "lg" ? "max-w-2xl" : props.size === "xl" ? "max-w-4xl" : "max-w-lg";
-        const hasAnimation = props.animated !== false;
+        const sizeClasses = size === "sm" ? "max-w-md" : size === "lg" ? "max-w-2xl" : size === "xl" ? "max-w-4xl" : "max-w-lg";
+        const hasAnimation = animated !== false;
 
         // When animated=false, we need to strip ALL animation and focus-visible classes
         // from the className because Radix's cva includes them in the base
-        let className = props.className || "";
+        let className = propClassName || "";
         if (!hasAnimation) {
-          // Debug: console.log("  Before filter:", className);
           // Completely rebuild className without animation classes
           className = className
             .split(" ")
@@ -92,7 +94,6 @@ vi.mock("@radix-ui/react-dialog", async () => {
                 !clean.startsWith("focus-visible:");
             })
             .join(" ");
-          // Debug: console.log("  After filter:", className);
         }
 
         // animatedClasses contains all animation classes when animated=true
@@ -106,33 +107,35 @@ vi.mock("@radix-ui/react-dialog", async () => {
             data-testid="mock-content"
             data-open={modalOpen}
             className={classes}
-            {...props}
-          />
+            {...rest}
+          >
+            {children}
+          </div>
         );
       },
       { displayName: "Content" }
     ),
-    Portal: ({ children }: any) => {
+    Portal: ({ children }: { children?: React.ReactNode }) => {
       // Only render if modal is open
       return modalOpen ? <div data-testid="mock-portal">{children}</div> : null;
     },
     Overlay: Object.assign(
-      (props: any) => <div data-testid="mock-overlay" {...props} />,
+      (props: React.HTMLAttributes<HTMLDivElement>) => <div data-testid="mock-overlay" {...props} />,
       { displayName: "Overlay" }
     ),
     Title: Object.assign(
-      (props: any) => <h2 data-testid="mock-title" {...props} />,
+      (props: React.HTMLAttributes<HTMLHeadingElement>) => <h2 data-testid="mock-title" {...props} />,
       { displayName: "Title" }
     ),
     Description: Object.assign(
-      (props: any) => <p data-testid="mock-description" {...props} />,
+      (props: React.HTMLAttributes<HTMLParagraphElement>) => <p data-testid="mock-description" {...props} />,
       { displayName: "Description" }
     ),
   };
 });
 
 vi.mock("@radix-ui/react-portal", () => ({
-  Root: ({ children }: any) => {
+  Root: ({ children }: { children?: React.ReactNode }) => {
     // Only render if modal is open
     return modalOpen ? <div data-testid="mock-portal-root">{children}</div> : null;
   },
@@ -284,7 +287,7 @@ describe("Modal", () => {
     // from Radix includes animations in the base. The actual component uses cva which
     // properly filters these when animated=false.
     it("renders without animation when animated is false (manual check)", () => {
-      const { container } = render(
+      render(
         <Modal>
           <ModalTrigger asChild>
             <button>Open</button>

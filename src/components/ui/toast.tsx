@@ -80,7 +80,7 @@ const ToastViewport = React.forwardRef<
 });
 ToastViewport.displayName = ToastPrimitives.Viewport.displayName;
 
-export interface ToastActionProps extends React.ComponentPropsWithoutRef<typeof ToastPrimitives.Action> {}
+export type ToastActionProps = React.ComponentPropsWithoutRef<typeof ToastPrimitives.Action>;
 
 const ToastAction = React.forwardRef<
     React.ElementRef<typeof ToastPrimitives.Action>,
@@ -94,7 +94,7 @@ const ToastAction = React.forwardRef<
 ));
 ToastAction.displayName = ToastPrimitives.Action.displayName;
 
-export interface ToastCloseProps extends React.ComponentPropsWithoutRef<typeof ToastPrimitives.Close> {}
+export type ToastCloseProps = React.ComponentPropsWithoutRef<typeof ToastPrimitives.Close>;
 
 const ToastClose = React.forwardRef<
     React.ElementRef<typeof ToastPrimitives.Close>,
@@ -110,7 +110,7 @@ const ToastClose = React.forwardRef<
 ));
 ToastClose.displayName = ToastPrimitives.Close.displayName;
 
-export interface ToastTitleProps extends React.ComponentPropsWithoutRef<typeof ToastPrimitives.Title> {}
+export type ToastTitleProps = React.ComponentPropsWithoutRef<typeof ToastPrimitives.Title>;
 
 const ToastTitle = React.forwardRef<
     React.ElementRef<typeof ToastPrimitives.Title>,
@@ -124,7 +124,7 @@ const ToastTitle = React.forwardRef<
 ));
 ToastTitle.displayName = ToastPrimitives.Title.displayName;
 
-export interface ToastDescriptionProps extends React.ComponentPropsWithoutRef<typeof ToastPrimitives.Description> {}
+export type ToastDescriptionProps = React.ComponentPropsWithoutRef<typeof ToastPrimitives.Description>;
 
 const ToastDescription = React.forwardRef<
     React.ElementRef<typeof ToastPrimitives.Description>,

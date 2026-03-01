@@ -18,9 +18,9 @@ vi.mock("@radix-ui/react-dropdown-menu", async () => {
   return {
     ...actual,
     Root: Object.assign(
-      ({ children, open, onOpenChange }: any) => {
+      ({ children, open }: { children?: React.ReactNode; open?: boolean; onOpenChange?: (open: boolean) => void }) => {
         return (
-          <div data-testid="mock-root" data-open={open} onOpenChange={onOpenChange}>
+          <div data-testid="mock-root" data-open={open}>
             {children}
           </div>
         );
@@ -28,18 +28,18 @@ vi.mock("@radix-ui/react-dropdown-menu", async () => {
       { displayName: "Root" }
     ),
     Trigger: Object.assign(
-      (props: any) => <button data-testid="mock-trigger" {...props} />,
+      (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => <button data-testid="mock-trigger" {...props} />,
       { displayName: "Trigger" }
     ),
     Content: Object.assign(
-      (props: any) => {
+      ({ animated, className: propClassName, children, "data-side": dataSide, ...rest }: React.HTMLAttributes<HTMLDivElement> & { animated?: boolean; "data-side"?: string }) => {
         // Simulate dropdownMenuContentVariants behavior
         const baseClasses = "z-50 min-w-48 rounded-xl border";
-        const hasAnimation = props.animated !== false;
+        const hasAnimation = animated !== false;
         const animatedClasses = hasAnimation ? "animate-in fade-in zoom-in-95" : "";
 
         // Filter out ALL animation classes from Radix's className if animated is false
-        let className = props.className || "";
+        let className = propClassName || "";
         if (!hasAnimation) {
           // Remove all Radix animation classes and our mock animation classes
           className = className
@@ -51,36 +51,36 @@ vi.mock("@radix-ui/react-dropdown-menu", async () => {
 
         const classes = `${baseClasses} ${animatedClasses} ${className}`;
         return (
-          <div data-testid="mock-content" className={classes} data-side={props["data-side"]}>
-            {props.children}
+          <div data-testid="mock-content" className={classes} data-side={dataSide} {...rest}>
+            {children}
           </div>
         );
       },
       { displayName: "Content" }
     ),
-    Portal: ({ children }: any) => <div data-testid="mock-portal">{children}</div>,
+    Portal: ({ children }: { children?: React.ReactNode }) => <div data-testid="mock-portal">{children}</div>,
     Group: Object.assign(
-      ({ children }: any) => <div data-testid="mock-group">{children}</div>,
+      ({ children }: { children?: React.ReactNode }) => <div data-testid="mock-group">{children}</div>,
       { displayName: "Group" }
     ),
     Label: Object.assign(
-      (props: any) => <div data-testid="mock-label" {...props} />,
+      (props: React.HTMLAttributes<HTMLDivElement>) => <div data-testid="mock-label" {...props} />,
       { displayName: "Label" }
     ),
     Item: Object.assign(
-      (props: any) => <div data-testid="mock-item" {...props} />,
+      (props: React.HTMLAttributes<HTMLDivElement>) => <div data-testid="mock-item" {...props} />,
       { displayName: "Item" }
     ),
     CheckboxItem: Object.assign(
-      (props: any) => <div data-testid="mock-checkbox-item" {...props} />,
+      (props: React.HTMLAttributes<HTMLDivElement>) => <div data-testid="mock-checkbox-item" {...props} />,
       { displayName: "CheckboxItem" }
     ),
     RadioItem: Object.assign(
-      (props: any) => <div data-testid="mock-radio-item" {...props} />,
+      (props: React.HTMLAttributes<HTMLDivElement>) => <div data-testid="mock-radio-item" {...props} />,
       { displayName: "RadioItem" }
     ),
     Separator: Object.assign(
-      (props: any) => <div data-testid="mock-separator" {...props} />,
+      (props: React.HTMLAttributes<HTMLDivElement>) => <div data-testid="mock-separator" {...props} />,
       { displayName: "Separator" }
     ),
   };

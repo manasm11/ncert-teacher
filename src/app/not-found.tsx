@@ -25,7 +25,7 @@ export default function NotFoundPage() {
               <div className="space-y-2">
                 <CardTitle className="text-3xl font-outfit">You are lost in the forest</CardTitle>
                 <CardDescription className="text-muted-foreground">
-                  This page doesn't exist yet. The trees are blocking the path!
+                  This page doesn&apos;t exist yet. The trees are blocking the path!
                 </CardDescription>
               </div>
             </CardHeader>
@@ -37,7 +37,7 @@ export default function NotFoundPage() {
               <div>
                 <p className="text-sm font-medium text-foreground">This is a peaceful forest</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  The page you're looking for hasn't been planted in our digital forest yet.
+                  The page you&apos;re looking for hasn&apos;t been planted in our digital forest yet.
                 </p>
               </div>
             </div>

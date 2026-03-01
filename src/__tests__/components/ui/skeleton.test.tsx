@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect } from "vitest";
+import { render } from "@testing-library/react";
 import {
   Skeleton,
   TextSkeleton,
@@ -7,13 +7,6 @@ import {
   ListSkeleton,
   AvatarSkeleton,
 } from "@/components/ui/skeleton";
-
-// Add a visible marker for skeleton elements to query
-const SkeletonWithText = ({ children, ...props }: any) => (
-  <div className="skeleton-wrapper" {...props}>
-    {children}
-  </div>
-);
 
 describe("Skeleton", () => {
   describe("Variants", () => {
@@ -132,7 +125,7 @@ describe("Skeleton", () => {
       const { container } = render(<TextSkeleton lines={3} />);
       const lines = container.querySelectorAll("[data-testid='skeleton']");
       const lastLine = lines[lines.length - 1];
-      expect(lastLine.parentElement.className).not.toContain("mb-4");
+      expect(lastLine.parentElement?.className).not.toContain("mb-4");
     });
 
     it("first line uses lg size", () => {
