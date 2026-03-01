@@ -25,48 +25,48 @@ export default function ClassroomListPage() {
     const [searchTerm, setSearchTerm] = useState("");
 
     useEffect(() => {
+        const fetchClassrooms = async () => {
+            const supabase = createClient();
+            setLoading(true);
+
+            // For now, return mock data since we don't have a classrooms table
+            // In production, this would fetch from a classrooms table
+            const mockClassrooms: Classroom[] = [
+                {
+                    id: "class-1",
+                    name: "Grade 6 Science",
+                    grade: 6,
+                    subject: "Science",
+                    studentCount: 24,
+                    lastActive: "2024-02-25",
+                    inviteCode: "G6SCI24",
+                },
+                {
+                    id: "class-2",
+                    name: "Grade 7 Math",
+                    grade: 7,
+                    subject: "Mathematics",
+                    studentCount: 28,
+                    lastActive: "2024-02-24",
+                    inviteCode: "G7MATH24",
+                },
+                {
+                    id: "class-3",
+                    name: "Grade 6 English",
+                    grade: 6,
+                    subject: "English",
+                    studentCount: 22,
+                    lastActive: "2024-02-23",
+                    inviteCode: "G6ENG24",
+                },
+            ];
+
+            setClassrooms(mockClassrooms);
+            setLoading(false);
+        };
+
         fetchClassrooms();
     }, []);
-
-    const fetchClassrooms = async () => {
-        const supabase = createClient();
-        setLoading(true);
-
-        // For now, return mock data since we don't have a classrooms table
-        // In production, this would fetch from a classrooms table
-        const mockClassrooms: Classroom[] = [
-            {
-                id: "class-1",
-                name: "Grade 6 Science",
-                grade: 6,
-                subject: "Science",
-                studentCount: 24,
-                lastActive: "2024-02-25",
-                inviteCode: "G6SCI24",
-            },
-            {
-                id: "class-2",
-                name: "Grade 7 Math",
-                grade: 7,
-                subject: "Mathematics",
-                studentCount: 28,
-                lastActive: "2024-02-24",
-                inviteCode: "G7MATH24",
-            },
-            {
-                id: "class-3",
-                name: "Grade 6 English",
-                grade: 6,
-                subject: "English",
-                studentCount: 22,
-                lastActive: "2024-02-23",
-                inviteCode: "G6ENG24",
-            },
-        ];
-
-        setClassrooms(mockClassrooms);
-        setLoading(false);
-    };
 
     const filteredClassrooms = classrooms.filter((c) =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

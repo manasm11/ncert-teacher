@@ -214,7 +214,7 @@ export function isStreakActive(lastLoginDate: string | null): boolean {
 /**
  * Get streak history for a user
  */
-export async function getStreakHistory(userId: string, limit: number = 10): Promise<any[]> {
+export async function getStreakHistory(userId: string, limit: number = 10): Promise<{ amount: number; description: string; created_at: string }[]> {
     const supabase = createClient();
 
     const { data, error } = await supabase

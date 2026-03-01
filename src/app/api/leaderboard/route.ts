@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
             offset: searchParams.get("offset") ? parseInt(searchParams.get("offset")!) : 0,
             grade: searchParams.get("grade") ? parseInt(searchParams.get("grade")!) : undefined,
             subject: searchParams.get("subject"),
-            period: searchParams.get("period") as any,
+            period: searchParams.get("period") as "all_time" | "monthly" | "weekly" | "daily" | undefined,
         });
 
         if (!validation.success) {

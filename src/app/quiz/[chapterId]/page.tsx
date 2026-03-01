@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { BookOpen, Clock, AlertCircle, CheckCircle2, ChevronRight, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,23 +33,18 @@ export default function QuizPage() {
     const router = useRouter();
     const chapterId = Number(params.chapterId);
 
-    const [state, setState] = useState<QuizState>({
-        status: "loading",
-        answers: {},
-        currentQuestionIndex: 0,
+    const [state, setState] = useState<QuizState>(() => {
+        // Generate a demo quiz for now
+        const quiz = generateDemoQuiz(chapterId, "Chapter Title", 6, "Science");
+        return {
+            status: "ready",
+            quiz,
+            answers: {},
+            currentQuestionIndex: 0,
+        };
     });
 
     const [userAnswer, setUserAnswer] = useState<string>("");
-
-    useEffect(() => {
-        // Generate a demo quiz for now
-        const quiz = generateDemoQuiz(chapterId, "Chapter Title", 6, "Science");
-        setState((prev) => ({
-            ...prev,
-            status: "ready",
-            quiz,
-        }));
-    }, [chapterId]);
 
     const currentQuestion = state.quiz?.questions[state.currentQuestionIndex];
 

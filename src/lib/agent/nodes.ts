@@ -267,7 +267,7 @@ export async function synthesisNode(state: typeof AgentState.State) {
     if (webSearchContext) knowledgePayload += `\nWeb Search Context:\n${webSearchContext}\n`;
 
     // === PERSONALITY CONFIGURATION ===
-    const personalityConfig = getPersonalityConfig(Number(classGrade), subject as any);
+    const personalityConfig = getPersonalityConfig(Number(classGrade) as GradeLevel, subject as SubjectType);
 
     // === MOOD CONFIGURATION ===
     // Determine mood based on router intent
@@ -383,7 +383,7 @@ Rules:
 Teaching Strategy:
 ${generateTeachingResponse({
     concept: "general explanation",
-    subject: subject as any,
+    subject: subject as string,
     isCorrect: false
 })}
 
@@ -425,7 +425,7 @@ Rules:
 Teaching Strategy:
 ${generateTeachingResponse({
     concept: "general explanation",
-    subject: subject as any,
+    subject: subject as string,
     isCorrect: false
 })}
 

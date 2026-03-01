@@ -40,80 +40,80 @@ export default function ClassroomDetailPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchClassroomData();
-    }, [classId]);
+        const fetchClassroomData = async () => {
+            const supabase = createClient();
+            setLoading(true);
 
-    const fetchClassroomData = async () => {
-        const supabase = createClient();
-        setLoading(true);
+            // Mock data since we don't have actual tables
+            const mockClassroom: ClassroomDetail = {
+                id: classId,
+                name: "Grade 6 Science",
+                grade: 6,
+                subject: "Science",
+                description: "Science concepts and experiments for Class 6",
+                inviteCode: "G6SCI24",
+            };
 
-        // Mock data since we don't have actual tables
-        const mockClassroom: ClassroomDetail = {
-            id: classId,
-            name: "Grade 6 Science",
-            grade: 6,
-            subject: "Science",
-            description: "Science concepts and experiments for Class 6",
-            inviteCode: "G6SCI24",
+            const mockStudents: Student[] = [
+                {
+                    id: "student-1",
+                    name: "Alex Johnson",
+                    avatarUrl: null,
+                    progress: 85,
+                    xp: 3500,
+                    level: 5,
+                    chaptersCompleted: 12,
+                    lastActive: "2024-02-25",
+                },
+                {
+                    id: "student-2",
+                    name: "Maria Garcia",
+                    avatarUrl: null,
+                    progress: 72,
+                    xp: 2800,
+                    level: 4,
+                    chaptersCompleted: 9,
+                    lastActive: "2024-02-24",
+                },
+                {
+                    id: "student-3",
+                    name: "Sam Chen",
+                    avatarUrl: null,
+                    progress: 90,
+                    xp: 3800,
+                    level: 5,
+                    chaptersCompleted: 14,
+                    lastActive: "2024-02-25",
+                },
+                {
+                    id: "student-4",
+                    name: "Emma Williams",
+                    avatarUrl: null,
+                    progress: 45,
+                    xp: 1500,
+                    level: 3,
+                    chaptersCompleted: 5,
+                    lastActive: "2024-02-20",
+                },
+                {
+                    id: "student-5",
+                    name: "Liam Brown",
+                    avatarUrl: null,
+                    progress: 60,
+                    xp: 2200,
+                    level: 4,
+                    chaptersCompleted: 7,
+                    lastActive: "2024-02-22",
+                },
+            ];
+
+            setClassroom(mockClassroom);
+            setStudents(mockStudents);
+            setLoading(false);
         };
 
-        const mockStudents: Student[] = [
-            {
-                id: "student-1",
-                name: "Alex Johnson",
-                avatarUrl: null,
-                progress: 85,
-                xp: 3500,
-                level: 5,
-                chaptersCompleted: 12,
-                lastActive: "2024-02-25",
-            },
-            {
-                id: "student-2",
-                name: "Maria Garcia",
-                avatarUrl: null,
-                progress: 72,
-                xp: 2800,
-                level: 4,
-                chaptersCompleted: 9,
-                lastActive: "2024-02-24",
-            },
-            {
-                id: "student-3",
-                name: "Sam Chen",
-                avatarUrl: null,
-                progress: 90,
-                xp: 3800,
-                level: 5,
-                chaptersCompleted: 14,
-                lastActive: "2024-02-25",
-            },
-            {
-                id: "student-4",
-                name: "Emma Williams",
-                avatarUrl: null,
-                progress: 45,
-                xp: 1500,
-                level: 3,
-                chaptersCompleted: 5,
-                lastActive: "2024-02-20",
-            },
-            {
-                id: "student-5",
-                name: "Liam Brown",
-                avatarUrl: null,
-                progress: 60,
-                xp: 2200,
-                level: 4,
-                chaptersCompleted: 7,
-                lastActive: "2024-02-22",
-            },
-        ];
-
-        setClassroom(mockClassroom);
-        setStudents(mockStudents);
-        setLoading(false);
-    };
+        fetchClassroomData();
+    }, [classId]);
 
     const stats = {
         totalStudents: students.length,

@@ -13,7 +13,7 @@
  *   SUPABASE_SERVICE_ROLE_KEY - Supabase service role key (for admin operations)
  */
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { serverEnv } from '@/lib/env'
 import { generateEmbedding } from '@/lib/agent/embeddings'
 
@@ -526,7 +526,7 @@ const CHAPTER_DEFINITIONS: ChapterDefinition[] = [
  * Get existing subject by slug, or create if not exists
  */
 async function getOrCreateSubject(
-  supabase: any,
+  supabase: SupabaseClient,
   subject: SubjectDefinition
 ): Promise<{ id: string; created: boolean }> {
   // Check if subject exists
@@ -567,7 +567,7 @@ async function getOrCreateSubject(
  * Get existing chapter by subject, grade, and chapter number, or create if not exists
  */
 async function getOrCreateChapter(
-  supabase: any,
+  supabase: SupabaseClient,
   subjectId: string,
   chapter: ChapterDefinition
 ): Promise<{ id: string; created: boolean }> {
@@ -613,7 +613,7 @@ async function getOrCreateChapter(
  * Generate and store embeddings for a chapter
  */
 async function generateAndStoreEmbeddings(
-  supabase: any,
+  supabase: SupabaseClient,
   chapterId: string,
   chapter: ChapterDefinition,
   subjectName: string
@@ -717,7 +717,7 @@ function splitChapterIntoChunks(content: string): { content: string; headings: s
  * Get existing badge by name, or create if not exists
  */
 async function getOrCreateBadge(
-  supabase: any,
+  supabase: SupabaseClient,
   badge: BadgeDefinition
 ): Promise<{ id: string; created: boolean }> {
   // Check if badge exists

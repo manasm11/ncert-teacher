@@ -28,77 +28,77 @@ export default function TeacherDashboard() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        const fetchDashboardData = async () => {
+            const supabase = createClient();
+            setLoading(true);
+
+            // Get total students
+            const { count: studentCount } = await supabase
+                .from("profiles")
+                .select("*", { count: "exact", head: true })
+                .eq("role", "student");
+
+            // Get total classes
+            const { count: classCount } = await supabase
+                .from("classrooms")
+                .select("*", { count: "exact", head: true });
+
+            // Get average progress
+            const { data: progressData } = await supabase
+                .from("user_progress")
+                .select("progress");
+
+            const avgProgress = progressData?.length
+                ? Math.round(progressData.reduce((sum, p) => sum + (p.progress || 0), 0) / progressData.length)
+                : 0;
+
+            // Get active students (those who logged in this week)
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+            const { count: activeCount } = await supabase
+                .from("user_streaks")
+                .select("*", { count: "exact", head: true })
+                .gte("last_login_date", oneWeekAgo.toISOString());
+
+            setStats({
+                totalStudents: studentCount || 0,
+                totalClasses: classCount || 0,
+                averageProgress: avgProgress,
+                activeStudents: activeCount || 0,
+            });
+
+            // Get recent activities
+            const { data: recentActivities } = await supabase
+                .from("user_progress")
+                .select(`
+                    progress,
+                    last_accessed,
+                    profiles (
+                        display_name
+                    ),
+                    chapters (
+                        title
+                    )
+                `)
+                .order("last_accessed", { ascending: false })
+                .limit(5);
+
+            setActivities(
+                (recentActivities || []).map((a) => ({
+                    id: a.progress?.id || "unknown",
+                    studentName: a.profiles?.display_name || "Unknown",
+                    action: "Completed chapter",
+                    chapter: a.chapters?.title || "Unknown chapter",
+                    timestamp: a.last_accessed || "",
+                }))
+            );
+
+            setLoading(false);
+        };
+
         fetchDashboardData();
     }, []);
-
-    const fetchDashboardData = async () => {
-        const supabase = createClient();
-        setLoading(true);
-
-        // Get total students
-        const { count: studentCount } = await supabase
-            .from("profiles")
-            .select("*", { count: "exact", head: true })
-            .eq("role", "student");
-
-        // Get total classes
-        const { count: classCount } = await supabase
-            .from("classrooms")
-            .select("*", { count: "exact", head: true });
-
-        // Get average progress
-        const { data: progressData } = await supabase
-            .from("user_progress")
-            .select("progress");
-
-        const avgProgress = progressData?.length
-            ? Math.round(progressData.reduce((sum, p) => sum + (p.progress || 0), 0) / progressData.length)
-            : 0;
-
-        // Get active students (those who logged in this week)
-        const oneWeekAgo = new Date();
-        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-
-        const { count: activeCount } = await supabase
-            .from("user_streaks")
-            .select("*", { count: "exact", head: true })
-            .gte("last_login_date", oneWeekAgo.toISOString());
-
-        setStats({
-            totalStudents: studentCount || 0,
-            totalClasses: classCount || 0,
-            averageProgress: avgProgress,
-            activeStudents: activeCount || 0,
-        });
-
-        // Get recent activities
-        const { data: recentActivities } = await supabase
-            .from("user_progress")
-            .select(`
-                progress,
-                last_accessed,
-                profiles (
-                    display_name
-                ),
-                chapters (
-                    title
-                )
-            `)
-            .order("last_accessed", { ascending: false })
-            .limit(5);
-
-        setActivities(
-            (recentActivities || []).map((a) => ({
-                id: a.progress?.id || "unknown",
-                studentName: a.profiles?.display_name || "Unknown",
-                action: "Completed chapter",
-                chapter: a.chapters?.title || "Unknown chapter",
-                timestamp: a.last_accessed || "",
-            }))
-        );
-
-        setLoading(false);
-    };
 
     if (loading) {
         return (
@@ -116,7 +116,7 @@ export default function TeacherDashboard() {
                         Teacher Dashboard
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        Track your students' progress and manage your classroom.
+                        Track your students&apos; progress and manage your classroom.
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -233,7 +233,7 @@ export default function TeacherDashboard() {
                                                 {activity.studentName} {activity.action}
                                             </div>
                                             <div className="text-xs text-muted-foreground">
-                                                "{activity.chapter}"
+                                                &quot;{activity.chapter}&quot;
                                             </div>
                                         </div>
                                         <div className="text-xs text-muted-foreground">

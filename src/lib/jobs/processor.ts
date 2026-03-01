@@ -437,7 +437,7 @@ export class JobProcessor {
     /**
      * Map database row to Job interface
      */
-    private mapRowToJob(row: any): Job {
+    private mapRowToJob(row: Record<string, unknown>): Job {
         return {
             id: row.id,
             type: row.type,

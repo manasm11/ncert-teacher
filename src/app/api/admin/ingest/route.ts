@@ -333,7 +333,7 @@ export async function POST(request: NextRequest) {
                     file_id: job.metadata.file_id as string | undefined,
                     file_name: job.metadata.file_name as string | undefined,
                     metadata: job.metadata.metadata as Record<string, unknown>,
-                    options: job.metadata.options as any,
+                    options: job.metadata.options as IngestRequest["options"],
                 });
             })
             .catch((err) => {

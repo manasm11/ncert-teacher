@@ -42,8 +42,18 @@ interface Activity {
     details: string;
 }
 
+interface UserProgress {
+    totalXp: number;
+    level: number;
+    chaptersCompleted: number;
+    chaptersInprogress: number;
+    streak: number;
+    quizzesTaken: number;
+    badgesEarned: number;
+}
+
 export default function ProgressReportPage() {
-    const [userProgress, setUserProgress] = useState<any>(null);
+    const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
     const [badges, setBadges] = useState<Badge[]>([]);
     const [quizHistory, setQuizHistory] = useState<QuizResult[]>([]);
     const [subjectProgress, setSubjectProgress] = useState<SubjectProgress[]>([]);
@@ -51,67 +61,69 @@ export default function ProgressReportPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchProgressData();
-    }, []);
+        const fetchProgressData = async () => {
+            const supabase = createClient();
+            setLoading(true);
 
-    const fetchProgressData = async () => {
-        const supabase = createClient();
-        setLoading(true);
+            // Get user profile
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
 
-        // Get user profile
-        const { data: { user } } = await supabase.auth.getUser();
+            // Mock data for now
+            const progressData = {
+                totalXp: 3500,
+                level: 5,
+                chaptersCompleted: 12,
+                chaptersInprogress: 3,
+                streak: 7,
+                quizzesTaken: 8,
+                badgesEarned: 4,
+            };
 
-        // Mock data for now
-        const progressData = {
-            totalXp: 3500,
-            level: 5,
-            chaptersCompleted: 12,
-            chaptersInprogress: 3,
-            streak: 7,
-            quizzesTaken: 8,
-            badgesEarned: 4,
+            const mockBadges: Badge[] = [
+                { id: "first_steps", name: "First Steps", icon: "🌱", description: "Complete your first chapter", earned: true, earnedAt: "2024-02-01" },
+                { id: "curious_explorer", name: "Curious Explorer", icon: "🤔", description: "Ask 5 questions in chat", earned: true, earnedAt: "2024-02-05" },
+                { id: "bookworm", name: "Bookworm", icon: "📚", description: "Complete 10 chapters", earned: true, earnedAt: "2024-02-10" },
+                { id: "streak_star", name: "Streak Star", icon: "🔥", description: "Maintain a 7-day login streak", earned: true, earnedAt: "2024-02-15" },
+                { id: "quiz_champion", name: "Quiz Champion", icon: "🏆", description: "Pass 5 quizzes", earned: false },
+                { id: "knowledge_seeker", name: "Knowledge Seeker", icon: "🌟", description: "Earn 1000 XP", earned: true, earnedAt: "2024-02-12" },
+            ];
+
+            const mockSubjectProgress: SubjectProgress[] = [
+                { subject: "Science", chaptersTotal: 15, chaptersCompleted: 8, progress: 53 },
+                { subject: "Mathematics", chaptersTotal: 12, chaptersCompleted: 5, progress: 42 },
+                { subject: "English", chaptersTotal: 10, chaptersCompleted: 7, progress: 70 },
+                { subject: "History", chaptersTotal: 8, chaptersCompleted: 2, progress: 25 },
+            ];
+
+            const mockQuizHistory: QuizResult[] = [
+                { id: "quiz-1", quizTitle: "Chapter 1 Quiz - Science", subject: "Science", score: 8, maxScore: 10, percentage: 80, passed: true, date: "2024-02-10" },
+                { id: "quiz-2", quizTitle: "Chapter 2 Quiz - Science", subject: "Science", score: 7, maxScore: 10, percentage: 70, passed: true, date: "2024-02-12" },
+                { id: "quiz-3", quizTitle: "Chapter 1 Quiz - Math", subject: "Mathematics", score: 5, maxScore: 10, percentage: 50, passed: false, date: "2024-02-08" },
+                { id: "quiz-4", quizTitle: "Chapter 3 Quiz - Science", subject: "Science", score: 9, maxScore: 10, percentage: 90, passed: true, date: "2024-02-14" },
+                { id: "quiz-5", quizTitle: "Chapter 2 Quiz - Math", subject: "Mathematics", score: 8, maxScore: 10, percentage: 80, passed: true, date: "2024-02-15" },
+                { id: "quiz-6", quizTitle: "Chapter 4 Quiz - Science", subject: "Science", score: 10, maxScore: 10, percentage: 100, passed: true, date: "2024-02-18" },
+            ];
+
+            const mockActivity: Activity[] = [
+                { id: "1", type: "chapter", title: "Completed: chapter 4 quiz", timestamp: "2 hours ago", details: "Score: 100%" },
+                { id: "2", type: "quiz", title: "Passed Chapter 4 Quiz - Science", timestamp: "2 hours ago", details: "Score: 10/10" },
+                { id: "3", type: "chapter", title: "Completed Chapter 3", timestamp: "1 day ago", details: "Progress: 100%" },
+                { id: "4", type: "login", title: "Daily Login Streak", timestamp: "2 days ago", details: "Streak: 7 days" },
+                { id: "5", type: "quiz", title: "Completed Chapter 2 Quiz", timestamp: "3 days ago", details: "Score: 7/10" },
+            ];
+
+            setUserProgress(progressData);
+            setBadges(mockBadges);
+            setSubjectProgress(mockSubjectProgress);
+            setQuizHistory(mockQuizHistory);
+            setRecentActivity(mockActivity);
+            setLoading(false);
         };
 
-        const mockBadges: Badge[] = [
-            { id: "first_steps", name: "First Steps", icon: "🌱", description: "Complete your first chapter", earned: true, earnedAt: "2024-02-01" },
-            { id: "curious_explorer", name: "Curious Explorer", icon: "🤔", description: "Ask 5 questions in chat", earned: true, earnedAt: "2024-02-05" },
-            { id: "bookworm", name: "Bookworm", icon: "📚", description: "Complete 10 chapters", earned: true, earnedAt: "2024-02-10" },
-            { id: "streak_star", name: "Streak Star", icon: "🔥", description: "Maintain a 7-day login streak", earned: true, earnedAt: "2024-02-15" },
-            { id: "quiz_champion", name: "Quiz Champion", icon: "🏆", description: "Pass 5 quizzes", earned: false },
-            { id: "knowledge_seeker", name: "Knowledge Seeker", icon: "🌟", description: "Earn 1000 XP", earned: true, earnedAt: "2024-02-12" },
-        ];
-
-        const mockSubjectProgress: SubjectProgress[] = [
-            { subject: "Science", chaptersTotal: 15, chaptersCompleted: 8, progress: 53 },
-            { subject: "Mathematics", chaptersTotal: 12, chaptersCompleted: 5, progress: 42 },
-            { subject: "English", chaptersTotal: 10, chaptersCompleted: 7, progress: 70 },
-            { subject: "History", chaptersTotal: 8, chaptersCompleted: 2, progress: 25 },
-        ];
-
-        const mockQuizHistory: QuizResult[] = [
-            { id: "quiz-1", quizTitle: "Chapter 1 Quiz - Science", subject: "Science", score: 8, maxScore: 10, percentage: 80, passed: true, date: "2024-02-10" },
-            { id: "quiz-2", quizTitle: "Chapter 2 Quiz - Science", subject: "Science", score: 7, maxScore: 10, percentage: 70, passed: true, date: "2024-02-12" },
-            { id: "quiz-3", quizTitle: "Chapter 1 Quiz - Math", subject: "Mathematics", score: 5, maxScore: 10, percentage: 50, passed: false, date: "2024-02-08" },
-            { id: "quiz-4", quizTitle: "Chapter 3 Quiz - Science", subject: "Science", score: 9, maxScore: 10, percentage: 90, passed: true, date: "2024-02-14" },
-            { id: "quiz-5", quizTitle: "Chapter 2 Quiz - Math", subject: "Mathematics", score: 8, maxScore: 10, percentage: 80, passed: true, date: "2024-02-15" },
-            { id: "quiz-6", quizTitle: "Chapter 4 Quiz - Science", subject: "Science", score: 10, maxScore: 10, percentage: 100, passed: true, date: "2024-02-18" },
-        ];
-
-        const mockActivity: Activity[] = [
-            { id: "1", type: "chapter", title: "Completed: chapter 4 quiz", timestamp: "2 hours ago", details: "Score: 100%" },
-            { id: "2", type: "quiz", title: "Passed Chapter 4 Quiz - Science", timestamp: "2 hours ago", details: "Score: 10/10" },
-            { id: "3", type: "chapter", title: "Completed Chapter 3", timestamp: "1 day ago", details: "Progress: 100%" },
-            { id: "4", type: "login", title: "Daily Login Streak", timestamp: "2 days ago", details: "Streak: 7 days" },
-            { id: "5", type: "quiz", title: "Completed Chapter 2 Quiz", timestamp: "3 days ago", details: "Score: 7/10" },
-        ];
-
-        setUserProgress(progressData);
-        setBadges(mockBadges);
-        setSubjectProgress(mockSubjectProgress);
-        setQuizHistory(mockQuizHistory);
-        setRecentActivity(mockActivity);
-        setLoading(false);
-    };
+        fetchProgressData();
+    }, []);
 
     if (loading) {
         return (

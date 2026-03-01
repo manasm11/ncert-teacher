@@ -428,7 +428,7 @@ export default function SearchPage() {
                         {isLoading ? "Searching..." : `${pagination?.total || 0} results`}
                         {query && (
                             <span className="text-sm text-muted-foreground ml-2">
-                                for "{query}"
+                                for &quot;{query}&quot;
                             </span>
                         )}
                     </h2>
@@ -450,7 +450,7 @@ export default function SearchPage() {
                         No results found
                     </h3>
                     <p className="text-muted-foreground max-w-md mx-auto mb-6">
-                        We couldn't find any chapters matching your search. Try adjusting your filters or using different keywords.
+                        We couldn&apos;t find any chapters matching your search. Try adjusting your filters or using different keywords.
                     </p>
                     <button
                         onClick={() => {
