@@ -39,10 +39,6 @@ export default function ClassroomDetailPage() {
     const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchClassroomData();
-    }, [classId]);
-
     const fetchClassroomData = async () => {
         const supabase = createClient();
         setLoading(true);
@@ -114,6 +110,10 @@ export default function ClassroomDetailPage() {
         setStudents(mockStudents);
         setLoading(false);
     };
+
+    useEffect(() => {
+        fetchClassroomData();
+    }, [classId]);
 
     const stats = {
         totalStudents: students.length,

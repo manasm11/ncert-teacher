@@ -50,10 +50,6 @@ export default function ProgressReportPage() {
     const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchProgressData();
-    }, []);
-
     const fetchProgressData = async () => {
         const supabase = createClient();
         setLoading(true);
@@ -112,6 +108,10 @@ export default function ProgressReportPage() {
         setRecentActivity(mockActivity);
         setLoading(false);
     };
+
+    useEffect(() => {
+        fetchProgressData();
+    }, []);
 
     if (loading) {
         return (

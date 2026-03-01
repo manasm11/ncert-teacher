@@ -206,7 +206,7 @@ export interface CurrentMood {
 
 // Global mood state (in production, this would be per session/user)
 let currentMoodState: CurrentMood | null = null;
-let moodHistory: { mood: GyanuMood; timestamp: string; context: string }[] = [];
+const moodHistory: { mood: GyanuMood; timestamp: string; context: string }[] = [];
 
 /**
  * Set Gyanu's mood
@@ -337,13 +337,14 @@ export function getMoodEmojis(count: number = 3): string[] {
 export function getMoodSummary(): string {
     const moodState = getCurrentMood();
     const { mood, remainingDuration } = moodState;
+    const config = MOOD_CONFIGS[mood];
 
     return `
 CURRENT MOOD: ${mood.toUpperCase()} (${remainingDuration} turns remaining)
-- Response tone: ${moodState.responseStyle.tone}
--Verbosity: ${moodState.responseStyle.verbosity}
-- Use these emojis: ${moodState.responseStyle.emojis.join(", ")}
-- Use these phrases: ${moodState.responseStyle.phrases.slice(0, 2).join(" | ")}
+- Response tone: ${config.responseStyle.tone}
+- Verbosity: ${config.responseStyle.verbosity}
+- Use these emojis: ${config.responseStyle.emojis.join(", ")}
+- Use these phrases: ${config.responseStyle.phrases.slice(0, 2).join(" | ")}
 
 YOUR RESPONSE SHOULD REFLECT THIS MOOD.
 `;

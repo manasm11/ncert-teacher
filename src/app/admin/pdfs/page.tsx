@@ -178,7 +178,7 @@ export default function PdfUploadPage() {
                             PDF Upload
                         </h1>
                         <p className="text-muted-foreground">
-                            Upload PDF textbooks for ingestion into Gyanu's knowledge base
+                            Upload PDF textbooks for ingestion into Gyanu&apos;s knowledge base
                         </p>
                     </div>
                 </div>

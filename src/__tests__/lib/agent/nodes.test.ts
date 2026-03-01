@@ -824,7 +824,7 @@ describe("synthesisNode", () => {
         const invokeArgs = mockQwenRouter.invoke.mock.calls[0][0];
         const systemMsg = invokeArgs[0];
         expect(typeof systemMsg.content === "string" && systemMsg.content).toContain(
-            "Class student"
+            "Class 8"
         );
     });
 });
