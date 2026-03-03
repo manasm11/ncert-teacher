@@ -17,14 +17,14 @@ export async function POST(req: NextRequest) {
         const validation = GenerateQuizSchema.safeParse(body);
         if (!validation.success) {
             return NextResponse.json(
-                { error: "Invalid request body", details: validation.error.errors },
+                { error: "Invalid request body", details: validation.error.issues },
                 { status: 400 }
             );
         }
 
         const { chapterId, questionCount, difficulty, questionTypes } = validation.data;
 
-        const supabase = createClient();
+        const supabase = await createClient();
 
         // Check if user is authenticated
         const { data: { user }, error: authError } = await supabase.auth.getUser();

@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { jobProcessor } from "@/lib/jobs/processor";
 import { createClient as createSupabaseClient } from "@/utils/supabase/server";
-import { downloadFile, uploadFile } from "@/lib/storage";
+import { downloadFile } from "@/lib/storage";
 import { chunkText } from "@/lib/rag/chunker";
 import { generateEmbedding } from "@/lib/agent/embeddings";
 import { BUCKETS } from "@/lib/storage";
@@ -24,7 +24,7 @@ const IngestRequestSchema = z.object({
     file_url: z.string().url().optional(),
     file_id: z.string().optional(),
     file_name: z.string().optional(),
-    metadata: z.record(z.unknown()).optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
     options: z
         .object({
             priority: z.number().optional(),
@@ -34,14 +34,12 @@ const IngestRequestSchema = z.object({
         .optional(),
 });
 
-const IngestResponseSchema = z.object({
-    job_id: z.string(),
-    status: z.literal("pending"),
-    message: z.string().optional(),
-});
-
 type IngestRequest = z.infer<typeof IngestRequestSchema>;
-type IngestResponse = z.infer<typeof IngestResponseSchema>;
+type IngestResponse = {
+    job_id: string;
+    status: "pending" | "processing" | "completed" | "failed";
+    message?: string;
+};
 
 // ============================================================================
 // Ingestion Handler
@@ -55,7 +53,7 @@ async function handleIngestJob(jobId: string, input: IngestRequest) {
     const { file_url, file_id, file_name, metadata = {}, options = {} } = input;
 
     // Get Supabase client
-    const supabase = createSupabaseClient();
+    const supabaseClient = await createSupabaseClient();
 
     // Step 1: Download the file
     await jobProcessor.updateJob(jobId, {
@@ -78,7 +76,7 @@ async function handleIngestJob(jobId: string, input: IngestRequest) {
         } else if (file_id) {
             // File already in storage
             const filePath = file_id.startsWith("uploads/") ? file_id : `uploads/${file_id}`;
-            fileData = await downloadFile(supabase, BUCKETS.NCERT_PDFS, filePath);
+            fileData = await downloadFile(supabaseClient, BUCKETS.NCERT_PDFS, filePath);
         } else {
             throw new Error("Either file_url or file_id must be provided");
         }
@@ -296,7 +294,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(
                 {
                     error: "Invalid request",
-                    details: result.error.errors.map((e) => ({
+                    details: result.error.issues.map((e) => ({
                         path: e.path.join("."),
                         message: e.message,
                     })),
@@ -322,7 +320,7 @@ export async function POST(request: NextRequest) {
             },
         };
 
-        const { jobId, status } = await jobProcessor.createJob(jobInput);
+        const { jobId } = await jobProcessor.createJob(jobInput);
 
         // Process the job in background
         // This will run asynchronously in the job processor loop
@@ -333,7 +331,7 @@ export async function POST(request: NextRequest) {
                     file_id: job.metadata.file_id as string | undefined,
                     file_name: job.metadata.file_name as string | undefined,
                     metadata: job.metadata.metadata as Record<string, unknown>,
-                    options: job.metadata.options as any,
+                    options: job.metadata.options as {priority?: number; skip_embedding?: boolean; skip_chunking?: boolean},
                 });
             })
             .catch((err) => {
@@ -342,7 +340,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json<IngestResponse>({
             job_id: jobId,
-            status,
+            status: "pending" as const,
             message: "Ingestion job queued. Track status at /api/admin/jobs/[job_id]",
         });
     } catch (error) {

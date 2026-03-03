@@ -32,28 +32,28 @@ interface UserProgress {
     last_accessed: string;
 }
 
-export function getSubjects(grade: number): Promise<Subject[]> {
+export async function getSubjects(grade: number): Promise<Subject[]> {
     const supabase = createClient();
-    return supabase
+    const res = await supabase
         .from("subjects")
         .select("id, name, grade, icon")
         .eq("grade", grade)
-        .order("name")
-        .then((res) => (res.data || []) as Subject[]);
+        .order("name");
+    return res.data || [];
 }
 
-export function getChapters(subjectId: string, grade: number): Promise<Chapter[]> {
+export async function getChapters(subjectId: string, grade: number): Promise<Chapter[]> {
     const supabase = createClient();
-    return supabase
+    const res = await supabase
         .from("chapters")
         .select("id, title, subject_id, grade, order, status, progress, stars")
         .eq("subject_id", subjectId)
         .eq("grade", grade)
-        .order("order")
-        .then((res) => (res.data || []) as Chapter[]);
+        .order("order");
+    return res.data || [];
 }
 
-export function getUserProgress(userId: string, chapterId?: number): Promise<UserProgress[]> {
+export async function getUserProgress(userId: string, chapterId?: number): Promise<UserProgress[]> {
     const supabase = createClient();
     let query = supabase
         .from("user_progress")
@@ -64,7 +64,8 @@ export function getUserProgress(userId: string, chapterId?: number): Promise<Use
         query = query.eq("chapter_id", chapterId);
     }
 
-    return query.then((res) => (res.data || []) as UserProgress[]);
+    const res = await query;
+    return res.data || [];
 }
 
 export default function Dashboard() {

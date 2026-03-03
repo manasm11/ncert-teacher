@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { gradeQuiz, calculateQuizStats, saveQuizSubmission } from "@/lib/quiz/grading";
+import { gradeQuiz, calculateQuizStats } from "@/lib/quiz/grading";
 import { z } from "zod";
 
 const SubmitQuizSchema = z.object({
     quizId: z.string().min(1),
-    answers: z.record(z.union([z.string(), z.array(z.string())])),
+    answers: z.record(z.string(), z.union([z.string(), z.array(z.string())])),
     timeTakenMinutes: z.number().optional(),
 });
 
@@ -16,14 +16,14 @@ export async function POST(req: NextRequest) {
         const validation = SubmitQuizSchema.safeParse(body);
         if (!validation.success) {
             return NextResponse.json(
-                { error: "Invalid request body", details: validation.error.errors },
+                { error: "Invalid request body", details: validation.error.issues },
                 { status: 400 }
             );
         }
 
         const { quizId, answers, timeTakenMinutes } = validation.data;
 
-        const supabase = createClient();
+        const supabase = await createClient();
 
         // Check if user is authenticated
         const { data: { user }, error: authError } = await supabase.auth.getUser();

@@ -1,13 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Trophy, Award, TrendingUp, Users, Filter } from "lucide-react";
+import { Trophy, TrendingUp, Users, Filter } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/client";
 
 interface LeaderboardEntry {
     rank: number;
@@ -98,7 +96,7 @@ export default function LeaderboardPage() {
                     Top Students
                 </h1>
                 <p className="text-muted-foreground max-w-2xl mx-auto">
-                    Compete and climb the ranks! See who's leading the pack in the Gyanu AI learning journey.
+                    Compete and climb the ranks! See who&apos;s leading the pack in the Gyanu AI learning journey.
                 </p>
             </div>
 

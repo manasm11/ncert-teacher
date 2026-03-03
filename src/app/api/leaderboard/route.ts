@@ -19,19 +19,21 @@ export async function GET(req: NextRequest) {
             offset: searchParams.get("offset") ? parseInt(searchParams.get("offset")!) : 0,
             grade: searchParams.get("grade") ? parseInt(searchParams.get("grade")!) : undefined,
             subject: searchParams.get("subject"),
-            period: searchParams.get("period") as any,
+            period: searchParams.get("period") as "all_time" | "monthly" | "weekly" | "daily" | undefined,
         });
 
         if (!validation.success) {
             return NextResponse.json(
-                { error: "Invalid parameters", details: validation.error.errors },
+                { error: "Invalid parameters", details: validation.error.issues },
                 { status: 400 }
             );
         }
 
         const { limit, offset, grade, subject, period } = validation.data;
+        const actualLimit = limit || 50;
+        const actualOffset = offset || 0;
 
-        const supabase = createClient();
+        const supabase = await createClient();
 
         // Build query with filters
         let query = supabase
@@ -50,7 +52,7 @@ export async function GET(req: NextRequest) {
                 xp_to_next_level
             `)
             .order("total_xp", { ascending: false })
-            .range(offset, offset + limit - 1);
+            .range(actualOffset, actualOffset + actualLimit - 1);
 
         // Apply grade filter
         if (grade) {
@@ -65,9 +67,9 @@ export async function GET(req: NextRequest) {
 
         // Apply time period filter for XP transactions
         if (period) {
-            const dateFilter = getPeriodDateFilter(period);
             // Note: For accurate period filtering, we'd need to sum recent transactions
             // For now, return all-time XP with note about period
+            // const dateFilter = getPeriodDateFilter(period);
         }
 
         const { data, error } = await query;
@@ -79,11 +81,11 @@ export async function GET(req: NextRequest) {
 
         // Process and return leaderboard data
         const leaderboard = (data || []).map((entry, index) => ({
-            rank: offset + index + 1,
+            rank: actualOffset + index + 1,
             userId: entry.user_id,
-            displayName: entry.profiles?.display_name || "Anonymous",
-            avatarUrl: entry.profiles?.avatar_url || null,
-            grade: entry.profiles?.grade,
+            displayName: entry.profiles?.[0]?.display_name || "Anonymous",
+            avatarUrl: entry.profiles?.[0]?.avatar_url || null,
+            grade: entry.profiles?.[0]?.grade,
             totalXp: entry.total_xp || 0,
             level: entry.level || 1,
             currentXp: entry.current_xp || 0,
@@ -101,11 +103,11 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
             leaderboard,
             pagination: {
-                limit,
-                offset,
+                limit: actualLimit,
+                offset: actualOffset,
                 totalCount: count || 0,
-                totalPages: Math.ceil((count || 0) / limit),
-                currentPage: Math.floor(offset / limit) + 1,
+                totalPages: Math.ceil((count || 0) / actualLimit),
+                currentPage: Math.floor(actualOffset / actualLimit) + 1,
             },
             timestamp: new Date().toISOString(),
         });
@@ -118,26 +120,6 @@ export async function GET(req: NextRequest) {
     }
 }
 
-/**
- * Get date filter based on period
- */
-function getPeriodDateFilter(period: string): string {
-    const now = new Date();
-    switch (period) {
-        case "daily":
-            return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-        case "weekly":
-            const weekly = new Date(now);
-            weekly.setDate(now.getDate() - 7);
-            return weekly.toISOString();
-        case "monthly":
-            const monthly = new Date(now);
-            monthly.setMonth(now.getMonth() - 1);
-            return monthly.toISOString();
-        default:
-            return new Date(0).toISOString(); // All time
-    }
-}
 
 /**
  * Calculate XP for level

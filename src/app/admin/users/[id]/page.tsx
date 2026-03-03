@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, User, Mail, Calendar, Activity, Shield, Trash2, Lock, Unlock, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +23,7 @@ interface UserProfile {
 }
 
 export default function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const router = useRouter();
     const { id } = use(params);
     const [user, setUser] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
@@ -117,8 +119,6 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
             </div>
         );
     }
-
-    const router = { push: (path: string) => {} }; // Will be replaced with useRouter()
 
     return (
         <div className="max-w-4xl mx-auto px-6 py-12">

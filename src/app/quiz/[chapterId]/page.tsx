@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/utils/supabase/client";
-import { generateDemoQuiz, type GeneratedQuiz } from "@/lib/quiz/generator";
-import { isAnswerCorrect } from "@/lib/quiz/grading";
+import { generateDemoQuiz, type GeneratedQuiz } from "@/lib/quiz/demo-generator";
+import { isAnswerCorrect } from "@/lib/quiz/client-grading";
 
 interface QuizQuestion {
     id: string;

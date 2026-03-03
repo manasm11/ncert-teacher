@@ -4,41 +4,29 @@
 // Response: Job status with current progress
 
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { jobProcessor } from "@/lib/jobs/processor";
 
-// ============================================================================
-// Response Schema
-// ============================================================================
+type ProgressStep = "downloading" | "parsing" | "chunking" | "embedding" | "storing" | "complete";
 
-const JobStatusResponseSchema = z.object({
-    job_id: z.string(),
-    type: z.string(),
-    status: z.enum(["pending", "processing", "completed", "failed"]),
-    progress: z.object({
-        step: z.enum([
-            "downloading",
-            "parsing",
-            "chunking",
-            "embedding",
-            "storing",
-            "complete",
-        ]),
-        percentage: z.number(),
-        message: z.string(),
-        details: z.record(z.unknown()).optional(),
-    }),
-    error: z.string().optional(),
-    metadata: z.record(z.unknown()),
-    result: z.unknown().optional(),
-    created_at: z.string(),
-    updated_at: z.string(),
-    started_at: z.string().optional(),
-    completed_at: z.string().optional(),
-    retry_count: z.number(),
-});
-
-type JobStatusResponse = z.infer<typeof JobStatusResponseSchema>;
+type JobStatusResponse = {
+    job_id: string;
+    type: string;
+    status: "pending" | "processing" | "completed" | "failed";
+    progress: {
+        step: ProgressStep;
+        percentage: number;
+        message: string;
+        details?: Record<string, unknown>;
+    };
+    error?: string;
+    metadata: Record<string, unknown>;
+    result?: unknown;
+    created_at: string;
+    updated_at: string;
+    started_at?: string;
+    completed_at?: string;
+    retry_count: number;
+};
 
 // ============================================================================
 // API Route Handler

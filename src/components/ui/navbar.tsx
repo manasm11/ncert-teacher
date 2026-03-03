@@ -15,8 +15,8 @@ import {
     ChevronLeft,
     Clock,
 } from "lucide-react";
-import { createClient } from "@/utils/supabase/server";
-import { redirect } from "next/navigation";
+import { User } from "@supabase/supabase-js";
+import { createClient } from "@/utils/supabase/client";
 import { ROLES, hasRole, type Role } from "@/lib/auth/roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,27 +38,38 @@ interface SearchState {
     selectedResult: number;
 }
 
-export async function Navbar() {
-    const supabase = await createClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+export function Navbar() {
+    const [user, setUser] = useState<User | null>(null);
+    const [role, setRole] = useState<Role | null>(null);
 
-    let role: Role | null = null;
-    if (user) {
-        const { data: profile } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .single();
-        role = (profile?.role as Role) ?? null;
-    }
+    useEffect(() => {
+        const fetchAuthData = async () => {
+            const supabase = createClient();
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+
+            setUser(user);
+
+            let userRole: Role | null = null;
+            if (user) {
+                const { data: profile } = await supabase
+                    .from("profiles")
+                    .select("role")
+                    .eq("id", user.id)
+                    .single();
+                userRole = (profile?.role as Role) ?? null;
+            }
+            setRole(userRole);
+        };
+
+        fetchAuthData();
+    }, []);
 
     const signOut = async () => {
-        "use server";
-        const supabase = await createClient();
+        const supabase = createClient();
         await supabase.auth.signOut();
-        redirect("/login");
+        window.location.href = "/";
     };
 
     return (
@@ -294,7 +305,7 @@ function SearchButton() {
                                     No results found for "{query}"
                                 </p>
                                 <Link
-                                    href="/search?q=" + encodeURIComponent(query)
+                                    href={`/search?q=${encodeURIComponent(query)}`}
                                     className="mt-3 inline-block text-primary text-sm font-medium hover:underline"
                                 >
                                     View all results
@@ -331,7 +342,7 @@ function SearchButton() {
                     {hasSearched && results.length > 0 && (
                         <div className="p-3 bg-muted/30 border-t border-border text-center">
                             <Link
-                                href="/search?q=" + encodeURIComponent(query)
+                                href={`/search?q=${encodeURIComponent(query)}`}
                                 className="text-xs text-muted-foreground hover:text-foreground hover:underline"
                             >
                                 View all results
