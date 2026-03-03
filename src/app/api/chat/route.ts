@@ -4,6 +4,7 @@ import { HumanMessage } from "@langchain/core/messages";
 import { moderateInput, createModerationReport } from "@/lib/safety/inputModeration";
 import { evaluateResponse } from "@/lib/safety/outputModeration";
 import { getFlaggedContentService, createReportFromModeration, ReportType, ContentCategory } from "@/lib/safety/flaggedContent";
+import { SeverityLevel } from "@/lib/safety/rules";
 
 /**
  * Helper function to extract user ID from context
@@ -109,7 +110,8 @@ export async function POST(req: NextRequest) {
         // OUTPUT MODERATION
         // Verify Gyanu's response is safe before returning
         // ---------------------------------------------------------------------
-        const outputEvaluation = evaluateResponse(botResponse, {
+        const botResponseText = typeof botResponse === "string" ? botResponse : JSON.stringify(botResponse);
+        const outputEvaluation = evaluateResponse(botResponseText, {
             classGrade: getGrade(userContext),
             subject: getSubject(userContext),
         });
@@ -118,10 +120,10 @@ export async function POST(req: NextRequest) {
             // Log the flagged response for admin review
             const service = getFlaggedContentService();
             const report = createReportFromModeration(
-                botResponse,
+                botResponseText,
                 ReportType.AI_OUTPUT,
-                outputEvaluation.violations[0]?.category || ContentCategory.HARASSMENT,
-                "medium",
+                (outputEvaluation.violations[0]?.category as ContentCategory) || ContentCategory.HARASSMENT,
+                SeverityLevel.MEDIUM,
                 userId || "anonymous",
                 {
                     grade: getGrade(userContext),
@@ -129,10 +131,10 @@ export async function POST(req: NextRequest) {
                     routingIntent: finalState.routingMetadata?.intent,
                 },
             );
-            await service.createReport(report);
+            const reportResult = await service.createReport(report);
 
             console.error("[Safety] AI response blocked:", {
-                reportId: report.id,
+                reportId: reportResult.id,
                 violations: outputEvaluation.violations.map((v) => v.category),
                 educationalScore: outputEvaluation.educationalAlignment.score,
             });
@@ -143,7 +145,7 @@ export async function POST(req: NextRequest) {
                     error: "blocked",
                     message: "I couldn't generate a proper response. 🌿 Let's try a different question about your studies.",
                     needsReview: true,
-                    reportId: report.id,
+                    reportId: reportResult.id,
                 },
                 { status: 403 },
             );
