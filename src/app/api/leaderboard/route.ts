@@ -30,6 +30,8 @@ export async function GET(req: NextRequest) {
         }
 
         const { limit, offset, grade, subject, period } = validation.data;
+        const actualLimit = limit || 50;
+        const actualOffset = offset || 0;
 
         const supabase = await createClient();
 
@@ -50,7 +52,7 @@ export async function GET(req: NextRequest) {
                 xp_to_next_level
             `)
             .order("total_xp", { ascending: false })
-            .range(offset, offset + limit - 1);
+            .range(actualOffset, actualOffset + actualLimit - 1);
 
         // Apply grade filter
         if (grade) {
@@ -79,7 +81,7 @@ export async function GET(req: NextRequest) {
 
         // Process and return leaderboard data
         const leaderboard = (data || []).map((entry, index) => ({
-            rank: offset + index + 1,
+            rank: actualOffset + index + 1,
             userId: entry.user_id,
             displayName: entry.profiles?.display_name || "Anonymous",
             avatarUrl: entry.profiles?.avatar_url || null,
@@ -101,11 +103,11 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
             leaderboard,
             pagination: {
-                limit,
-                offset,
+                limit: actualLimit,
+                offset: actualOffset,
                 totalCount: count || 0,
-                totalPages: Math.ceil((count || 0) / limit),
-                currentPage: Math.floor(offset / limit) + 1,
+                totalPages: Math.ceil((count || 0) / actualLimit),
+                currentPage: Math.floor(actualOffset / actualLimit) + 1,
             },
             timestamp: new Date().toISOString(),
         });
