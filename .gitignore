@@ -57,3 +57,4 @@ next-env.d.ts
 .aider*
 # worktrees
 .worktrees
+docs/
