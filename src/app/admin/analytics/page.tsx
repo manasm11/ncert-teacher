@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Users, MessageSquare, BookOpen, Target, TrendingUp } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
-import Link from "next/link";
 
 interface AnalyticsData {
     activeUsers: number;

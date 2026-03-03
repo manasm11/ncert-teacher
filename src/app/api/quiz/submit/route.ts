@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { gradeQuiz, calculateQuizStats, saveQuizSubmission } from "@/lib/quiz/grading";
+import { gradeQuiz, calculateQuizStats } from "@/lib/quiz/grading";
 import { z } from "zod";
 
 const SubmitQuizSchema = z.object({
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
         const { quizId, answers, timeTakenMinutes } = validation.data;
 
-        const supabase = createClient();
+        const supabase = await createClient();
 
         // Check if user is authenticated
         const { data: { user }, error: authError } = await supabase.auth.getUser();

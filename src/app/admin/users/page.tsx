@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Filter, User, Users, Activity, MoreHorizontal, ChevronDown, RefreshCw } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Search, Filter, Users, Activity, MoreHorizontal, ChevronDown, RefreshCw } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -87,19 +87,6 @@ export default function UserManagementPage() {
         }
     };
 
-    const handleActivityToggle = async (userId: string, isActive: boolean) => {
-        const supabase = createClient();
-        const { error } = await supabase
-            .from("profiles")
-            .update({ is_active: isActive })
-            .eq("id", userId);
-
-        if (!error) {
-            setUsers((prev) =>
-                prev.map((u) => (u.id === userId ? { ...u, is_active: isActive } : u))
-            );
-        }
-    };
 
     const getGradeBadgeColor = (grade: number | null) => {
         if (!grade) return "bg-muted text-muted-foreground";

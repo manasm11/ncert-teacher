@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: "Limit must be between 1 and 100" }, { status: 400 });
         }
 
-        const supabase = createClient();
+        const supabase = await createClient();
 
         // Get subject ID if subject slug is provided
         let subjectId: string | null = null;

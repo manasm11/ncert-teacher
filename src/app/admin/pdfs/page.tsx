@@ -5,7 +5,6 @@ import { Upload, FileText, CheckCircle2, XCircle, Loader2, Trash2, AlertCircle }
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
@@ -178,7 +177,7 @@ export default function PdfUploadPage() {
                             PDF Upload
                         </h1>
                         <p className="text-muted-foreground">
-                            Upload PDF textbooks for ingestion into Gyanu's knowledge base
+                            Upload PDF textbooks for ingestion into Gyanu&apos;s knowledge base
                         </p>
                     </div>
                 </div>

@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
                 latestUserText,
                 ReportType.USER_INPUT,
                 ContentCategory.HARASSMENT,
-                "medium",
+                SeverityLevel.MEDIUM,
                 userId || "anonymous",
                 {
                     grade: getGrade(userContext),

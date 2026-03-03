@@ -15,8 +15,7 @@ import {
     ChevronLeft,
     Clock,
 } from "lucide-react";
-import { createClient } from "@/utils/supabase/server";
-import { redirect } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 import { ROLES, hasRole, type Role } from "@/lib/auth/roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,25 +37,38 @@ interface SearchState {
     selectedResult: number;
 }
 
-export async function Navbar() {
-    const supabase = await createClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+export function Navbar() {
+    const [user, setUser] = useState(null);
+    const [role, setRole] = useState<Role | null>(null);
 
-    let role: Role | null = null;
-    if (user) {
-        const { data: profile } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .single();
-        role = (profile?.role as Role) ?? null;
-    }
+    useEffect(() => {
+        const fetchAuthData = async () => {
+            const supabase = createClient();
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+
+            setUser(user);
+
+            let userRole: Role | null = null;
+            if (user) {
+                const { data: profile } = await supabase
+                    .from("profiles")
+                    .select("role")
+                    .eq("id", user.id)
+                    .single();
+                userRole = (profile?.role as Role) ?? null;
+            }
+            setRole(userRole);
+        };
+
+        fetchAuthData();
+    }, []);
 
     const signOut = async () => {
-        // Auth action moved to server component
-        console.log("Sign out clicked");
+        const supabase = createClient();
+        await supabase.auth.signOut();
+        window.location.href = "/";
     };
 
     return (

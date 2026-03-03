@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
         const { chapterId, questionCount, difficulty, questionTypes } = validation.data;
 
-        const supabase = createClient();
+        const supabase = await createClient();
 
         // Check if user is authenticated
         const { data: { user }, error: authError } = await supabase.auth.getUser();

@@ -2,31 +2,31 @@ import { createClient } from "@/utils/supabase/server";
 
 export async function GET() {
     try {
-        const supabase = createClient();
+        const client = await createClient();
 
         // Fetch active users (last 30 days)
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        const { count: activeUsers, error: usersError } = await supabase
+        const { count: activeUsers } = await client
             .from("profiles")
             .select("id", { count: "exact", head: true })
             .gte("last_login", thirtyDaysAgo.toISOString());
 
         // Fetch total messages
-        const { count: totalMessages, error: messagesError } = await supabase
+        const { count: totalMessages } = await client
             .from("chat_messages")
             .select("id", { count: "exact", head: true });
 
         // Fetch popular chapters
-        const { data: popularChapters, error: chaptersError } = await supabase
+        const { data: popularChapters } = await client
             .from("chapter_interactions")
             .select("chapter_id, chapter_title, interaction_count")
             .order("interaction_count", { ascending: false })
             .limit(10);
 
         // Fetch average quiz score
-        const { data: quizData, error: quizError } = await supabase
+        const { data: quizData } = await client
             .from("quiz_attempts")
             .select("score")
             .neq("score", null);
@@ -36,7 +36,7 @@ export async function GET() {
             : 0;
 
         // Fetch intent distribution
-        const { data: intentsData, error: intentsError } = await supabase
+        const { data: intentsData } = await client
             .from("chat_sessions")
             .select("router_intent");
 

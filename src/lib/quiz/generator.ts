@@ -1,6 +1,7 @@
+// This file should only be used in server components/actions
 import { createClient } from "@/utils/supabase/server";
 import { serverEnv } from "@/lib/env";
-import { zodResponseFormat } from "openai/resources";
+import { z } from "zod";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { generateObject } from "ai";
 
@@ -128,24 +129,21 @@ Return a JSON object with this exact schema:
                     return { text: data.choices[0].message.content };
                 },
             },
-            schema: zodResponseFormat(
-                {
-                    title: zodResponseFormat.string(),
-                    description: zodResponseFormat.string(),
-                    questions: zodResponseFormat.array(
-                        zodResponseFormat.object({
-                            id: zodResponseFormat.string(),
-                            type: zodResponseFormat.enum(["multiple-choice", "true-false", "short-answer"]),
-                            question: zodResponseFormat.string(),
-                            options: zodResponseFormat.array(zodResponseFormat.string()).optional(),
-                            correctAnswer: zodResponseFormat.union([zodResponseFormat.string(), zodResponseFormat.array(zodResponseFormat.string())]),
-                            explanation: zodResponseFormat.string(),
-                            points: zodResponseFormat.number(),
-                        })
-                    ),
-                },
-                "QuizSchema"
-            ),
+            schema: z.object({
+                title: z.string(),
+                description: z.string(),
+                questions: z.array(
+                    z.object({
+                        id: z.string(),
+                        type: z.enum(["multiple-choice", "true-false", "short-answer"]),
+                        question: z.string(),
+                        options: z.array(z.string()).optional(),
+                        correctAnswer: z.union([z.string(), z.array(z.string())]),
+                        explanation: z.string(),
+                        points: z.number(),
+                    })
+                ),
+            }),
             temperature: 0.7,
         });
 
@@ -171,64 +169,4 @@ Return a JSON object with this exact schema:
     }
 }
 
-/**
- * Generate a sample quiz for demonstration
- */
-export function generateDemoQuiz(chapterId: number, chapterTitle: string, grade: number, subject: string): GeneratedQuiz {
-    const questions: QuizQuestion[] = [
-        {
-            id: "q1",
-            type: "multiple-choice",
-            question: `What is the main topic covered in Chapter ${chapterTitle} for Class ${grade} ${subject}?`,
-            options: ["Fundamental concepts of the chapter", "Advanced theoretical concepts", "Historical context only", "Practice problems only"],
-            correctAnswer: "Fundamental concepts of the chapter",
-            explanation: "This chapter introduces the core concepts and fundamental principles of the subject.",
-            points: 15,
-        },
-        {
-            id: "q2",
-            type: "true-false",
-            question: "Understanding the basic concepts helps in solving complex problems later.",
-            correctAnswer: "true",
-            explanation: "Yes, foundational knowledge is essential for building more complex understanding.",
-            points: 10,
-        },
-        {
-            id: "q3",
-            type: "short-answer",
-            question: "Name one key term or concept introduced in this chapter.",
-            correctAnswer: ["key concept", "important term", "main idea"],
-            explanation: "The chapter introduces several important terms and concepts that form the foundation.",
-            points: 15,
-        },
-        {
-            id: "q4",
-            type: "multiple-choice",
-            question: "Which of the following is a common application of the concepts in this chapter?",
-            options: ["Real-world problem solving", "Purely theoretical study", " Memorization only", "None of the above"],
-            correctAnswer: "Real-world problem solving",
-            explanation: "The concepts learned are meant to be applied to understand and solve real-world problems.",
-            points: 15,
-        },
-        {
-            id: "q5",
-            type: "short-answer",
-            question: "What is the primary goal of studying this chapter?",
-            correctAnswer: ["to understand key concepts", "to learn key principles", "to build foundation"],
-            explanation: "The chapter aims to establish a strong foundation in the subject area.",
-            points: 10,
-        },
-    ];
-
-    return {
-        id: `quiz-${chapterId}-${Date.now()}`,
-        chapter_id: chapterId,
-        title: `Chapter ${chapterTitle} Quiz`,
-        description: "Test your understanding of the concepts covered in this chapter",
-        questions,
-        totalPoints: 65,
-        timeLimitMinutes: 15,
-        passingScore: 40,
-        createdAt: new Date().toISOString(),
-    };
-}
+// Note: generateDemoQuiz has been moved to demo-generator.ts for client-side usage

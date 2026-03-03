@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Trophy, CheckCircle2, XCircle, AlertCircle, ArrowRight, RefreshCw, Trophy2 } from "lucide-react";
+import { Trophy, CheckCircle2, XCircle, AlertCircle, ArrowRight, RefreshCw, BookOpen } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
@@ -153,7 +153,7 @@ export default function QuizResultsPage() {
             <div className="text-center mb-8">
                 <div className="inline-block p-4 rounded-full bg-primary/10 mb-4">
                     {result.percentage >= 80 ? (
-                        <Trophy2 className={`w-16 h-16 ${trophyColor} fill-current`} />
+                        <Trophy className={`w-16 h-16 ${trophyColor} fill-current`} />
                     ) : result.percentage >= 60 ? (
                         <Trophy className={`w-16 h-16 ${trophyColor} fill-current`} />
                     ) : (

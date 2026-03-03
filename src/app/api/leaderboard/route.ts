@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
             offset: searchParams.get("offset") ? parseInt(searchParams.get("offset")!) : 0,
             grade: searchParams.get("grade") ? parseInt(searchParams.get("grade")!) : undefined,
             subject: searchParams.get("subject"),
-            period: searchParams.get("period") as any,
+            period: searchParams.get("period") as "all_time" | "monthly" | "weekly" | "daily" | undefined,
         });
 
         if (!validation.success) {
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
         const { limit, offset, grade, subject, period } = validation.data;
 
-        const supabase = createClient();
+        const supabase = await createClient();
 
         // Build query with filters
         let query = supabase
@@ -65,9 +65,9 @@ export async function GET(req: NextRequest) {
 
         // Apply time period filter for XP transactions
         if (period) {
-            const dateFilter = getPeriodDateFilter(period);
             // Note: For accurate period filtering, we'd need to sum recent transactions
             // For now, return all-time XP with note about period
+            // const dateFilter = getPeriodDateFilter(period);
         }
 
         const { data, error } = await query;
@@ -118,26 +118,6 @@ export async function GET(req: NextRequest) {
     }
 }
 
-/**
- * Get date filter based on period
- */
-function getPeriodDateFilter(period: string): string {
-    const now = new Date();
-    switch (period) {
-        case "daily":
-            return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-        case "weekly":
-            const weekly = new Date(now);
-            weekly.setDate(now.getDate() - 7);
-            return weekly.toISOString();
-        case "monthly":
-            const monthly = new Date(now);
-            monthly.setMonth(now.getMonth() - 1);
-            return monthly.toISOString();
-        default:
-            return new Date(0).toISOString(); // All time
-    }
-}
 
 /**
  * Calculate XP for level
