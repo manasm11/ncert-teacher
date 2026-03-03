@@ -56,4 +56,4 @@ yarn-error.log*
 next-env.d.ts
 .aider*
 # worktrees
-.worktrees/
+.worktrees
