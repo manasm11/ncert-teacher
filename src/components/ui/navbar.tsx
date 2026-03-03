@@ -15,6 +15,7 @@ import {
     ChevronLeft,
     Clock,
 } from "lucide-react";
+import { User } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
 import { ROLES, hasRole, type Role } from "@/lib/auth/roles";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,7 @@ interface SearchState {
 }
 
 export function Navbar() {
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState<User | null>(null);
     const [role, setRole] = useState<Role | null>(null);
 
     useEffect(() => {

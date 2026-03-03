@@ -90,9 +90,9 @@ export default function TeacherDashboard() {
         setActivities(
             (recentActivities || []).map((a) => ({
                 id: a.progress?.id || "unknown",
-                studentName: a.profiles?.display_name || "Unknown",
+                studentName: a.profiles?.[0]?.display_name || "Unknown",
                 action: "Completed chapter",
-                chapter: a.chapters?.title || "Unknown chapter",
+                chapter: a.chapters?.[0]?.title || "Unknown chapter",
                 timestamp: a.last_accessed || "",
             }))
         );

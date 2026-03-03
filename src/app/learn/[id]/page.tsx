@@ -66,7 +66,7 @@ export default function LearnInteractivePage({ params }: { params: Promise<{ id:
             if (chapterData.content) {
                 const topicMatches = chapterData.content.match(/^### (.+)$/gm);
                 if (topicMatches) {
-                    setTopics(topicMatches.map(m => m.replace(/^### /, "")));
+                    setTopics(topicMatches.map((m: string) => m.replace(/^### /, "")));
                 }
             }
 

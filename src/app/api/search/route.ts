@@ -137,7 +137,7 @@ export async function GET(req: NextRequest) {
             },
             filters: {
                 subject,
-                grade: gradeFilter,
+                grade: gradeFilter ?? undefined,
                 query: q,
             },
         };
@@ -147,7 +147,7 @@ export async function GET(req: NextRequest) {
         console.error("Search API Error:", error);
 
         if (error instanceof z.ZodError) {
-            return NextResponse.json({ error: "Invalid search parameters", details: error.errors }, { status: 400 });
+            return NextResponse.json({ error: "Invalid search parameters", details: error.issues }, { status: 400 });
         }
 
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });

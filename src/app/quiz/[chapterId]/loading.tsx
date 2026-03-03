@@ -7,7 +7,7 @@ export default function Loading() {
   return (
     <div className="min-h-screen p-8">
       <div className="max-w-4xl mx-auto">
-        <card>
+        <Card>
           <CardContent className="p-6">
             <Skeleton className="h-8 w-64 mb-4" />
             <Skeleton className="h-6 w-48 mb-6" />
@@ -31,7 +31,7 @@ export default function Loading() {
               <Skeleton className="h-10 w-full" />
             </div>
           </CardContent>
-        </card>
+        </Card>
       </div>
     </div>
   )

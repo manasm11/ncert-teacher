@@ -83,9 +83,9 @@ export async function GET(req: NextRequest) {
         const leaderboard = (data || []).map((entry, index) => ({
             rank: actualOffset + index + 1,
             userId: entry.user_id,
-            displayName: entry.profiles?.display_name || "Anonymous",
-            avatarUrl: entry.profiles?.avatar_url || null,
-            grade: entry.profiles?.grade,
+            displayName: entry.profiles?.[0]?.display_name || "Anonymous",
+            avatarUrl: entry.profiles?.[0]?.avatar_url || null,
+            grade: entry.profiles?.[0]?.grade,
             totalXp: entry.total_xp || 0,
             level: entry.level || 1,
             currentXp: entry.current_xp || 0,

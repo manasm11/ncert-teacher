@@ -7,7 +7,7 @@ export default function Loading() {
   return (
     <div className="min-h-screen p-8">
       <div className="max-w-4xl mx-auto">
-        <card>
+        <Card>
           <CardHeader className="text-center">
             <Skeleton className="h-24 w-24 rounded-full mx-auto mb-4" />
             <Skeleton className="h-6 w-48 mx-auto mb-2" />
@@ -15,19 +15,19 @@ export default function Loading() {
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {Array.from({ length: 3 }).map((_, i) => (
-              <card key={i}>
+              <Card key={i}>
                 <CardHeader>
                   <Skeleton className="h-4 w-20" />
                 </CardHeader>
                 <CardContent>
                   <Skeleton className="h-6 w-full" />
                 </CardContent>
-              </card>
+              </Card>
             ))}
           </CardContent>
-        </card>
+        </Card>
 
-        <card className="mt-6">
+        <Card className="mt-6">
           <CardHeader>
             <Skeleton className="h-6 w-48" />
           </CardHeader>
@@ -41,7 +41,7 @@ export default function Loading() {
               ))}
             </div>
           </CardContent>
-        </card>
+        </Card>
       </div>
     </div>
   )
