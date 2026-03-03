@@ -29,13 +29,13 @@ export default function Error({ error, reset }: ErrorProps) {
           <CardTitle className="text-xl font-semibold">
             {isNotFound ? 'Page Not Found' : 'Something went wrong'}
           </CardTitle>
-        <CardHeader>
+        </CardHeader>
         <CardContent className="space-y-4 text-center">
           <p className="text-muted-foreground">
-            {isNotFound && 'The page you're looking for doesn't exist.'}
-            {isAuthError && 'Authentication error. Please login again.'}
+            {isNotFound && "The page you're looking for doesn't exist."}
+            {isAuthError && "Authentication error. Please login again."}
             {!isNotFound && !isAuthError &&
-              'An unexpected error occurred. Don't worry, our team has been notified.'}
+              "An unexpected error occurred. Don't worry, our team has been notified."}
           </p>
 
           <div className="flex flex-col gap-2">
