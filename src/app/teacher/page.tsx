@@ -97,6 +97,7 @@ export default function TeacherDashboard() {
     };
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchDashboardData();
     }, []);
 
@@ -116,7 +117,7 @@ export default function TeacherDashboard() {
                         Teacher Dashboard
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        Track your students' progress and manage your classroom.
+                        Track your students&apos; progress and manage your classroom.
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -233,7 +234,7 @@ export default function TeacherDashboard() {
                                                 {activity.studentName} {activity.action}
                                             </div>
                                             <div className="text-xs text-muted-foreground">
-                                                "{activity.chapter}"
+                                                {`"${activity.chapter}"`}
                                             </div>
                                         </div>
                                         <div className="text-xs text-muted-foreground">

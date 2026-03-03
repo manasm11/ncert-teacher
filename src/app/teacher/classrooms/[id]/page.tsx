@@ -112,6 +112,7 @@ export default function ClassroomDetailPage() {
     };
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchClassroomData();
     }, [classId]);
 
