@@ -277,7 +277,7 @@ const DropdownMenuSeparator = React.forwardRef<
 ));
 DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName;
 
-export interface DropdownMenuShortcutProps extends React.HTMLAttributes<HTMLSpanElement> {}
+export type DropdownMenuShortcutProps = React.HTMLAttributes<HTMLSpanElement>
 
 const DropdownMenuShortcut = React.forwardRef<HTMLSpanElement, DropdownMenuShortcutProps>(
     ({ className, ...props }, ref) => {

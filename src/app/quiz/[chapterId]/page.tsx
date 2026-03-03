@@ -41,7 +41,7 @@ export default function QuizPage() {
 
     const [userAnswer, setUserAnswer] = useState<string>("");
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     useEffect(() => {
         // Generate a demo quiz for now
         const quiz = generateDemoQuiz(chapterId, "Chapter Title", 6, "Science");

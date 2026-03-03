@@ -119,12 +119,12 @@ export default function ProgressReportPage() {
     };
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
         const loadData = () => {
             fetchProgressData();
         };
         loadData();
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
     }, []);
 
     if (loading) {
