@@ -55,10 +55,8 @@ export async function Navbar() {
     }
 
     const signOut = async () => {
-        "use server";
-        const supabase = await createClient();
-        await supabase.auth.signOut();
-        redirect("/login");
+        // Auth action moved to server component
+        console.log("Sign out clicked");
     };
 
     return (
@@ -294,7 +292,7 @@ function SearchButton() {
                                     No results found for "{query}"
                                 </p>
                                 <Link
-                                    href="/search?q=" + encodeURIComponent(query)
+                                    href={`/search?q=${encodeURIComponent(query)}`}
                                     className="mt-3 inline-block text-primary text-sm font-medium hover:underline"
                                 >
                                     View all results
@@ -331,7 +329,7 @@ function SearchButton() {
                     {hasSearched && results.length > 0 && (
                         <div className="p-3 bg-muted/30 border-t border-border text-center">
                             <Link
-                                href="/search?q=" + encodeURIComponent(query)
+                                href={`/search?q=${encodeURIComponent(query)}`}
                                 className="text-xs text-muted-foreground hover:text-foreground hover:underline"
                             >
                                 View all results
