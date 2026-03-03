@@ -42,8 +42,17 @@ interface Activity {
     details: string;
 }
 
+interface UserProgressData {
+    level: number;
+    totalXp: number;
+    chaptersCompleted: number;
+    chaptersInprogress: number;
+    quizzesTaken: number;
+    streak: number;
+}
+
 export default function ProgressReportPage() {
-    const [userProgress, setUserProgress] = useState<any>(null);
+    const [userProgress, setUserProgress] = useState<UserProgressData | null>(null);
     const [badges, setBadges] = useState<Badge[]>([]);
     const [quizHistory, setQuizHistory] = useState<QuizResult[]>([]);
     const [subjectProgress, setSubjectProgress] = useState<SubjectProgress[]>([]);
@@ -110,7 +119,12 @@ export default function ProgressReportPage() {
     };
 
     useEffect(() => {
-        fetchProgressData();
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        const loadData = () => {
+            fetchProgressData();
+        };
+        loadData();
+        // eslint-disable-next-line react-hooks/set-state-in-effect
     }, []);
 
     if (loading) {

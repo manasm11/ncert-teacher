@@ -152,7 +152,7 @@ export default function LearnInteractivePage({ params }: { params: Promise<{ id:
                 </div>
                 <h2 className="text-2xl font-bold font-outfit mb-2">Chapter Not Found</h2>
                 <p className="text-muted-foreground mb-8 text-center max-w-md">
-                    The chapter you're looking for doesn't exist or you don't have access to it.
+                    The chapter you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
                 </p>
                 <Button asChild>
                     <Link href="/dashboard" className="flex items-center gap-2">

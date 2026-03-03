@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Trophy, CheckCircle2, XCircle, AlertCircle, ArrowRight, RefreshCw, Trophy2 } from "lucide-react";
+import { Trophy, CheckCircle2, XCircle, AlertCircle, ArrowRight, RefreshCw, Trophy2, BookOpen } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
